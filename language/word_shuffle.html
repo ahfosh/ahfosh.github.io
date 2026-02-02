@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>单词列表乱序加密/解密工具</title>
+    <style>
+      :root {
+        --bg: #f8fafc;
+        --card: #fff;
+        --border: #e2e8f0;
+        --primary: #0f766e;
+        --primary-hover: #0d9488;
+        --secondary: #64748b;
+        --text: #1e293b;
+        --radius: 12px;
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.6;
+        margin: 0;
+        padding: 24px;
+        min-height: 100vh;
+      }
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+      h1 {
+        text-align: center;
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--primary);
+        margin-bottom: 24px;
+      }
+      .key-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+      }
+      .key-row label {
+        font-weight: 600;
+        color: var(--secondary);
+        white-space: nowrap;
+      }
+      .key-row input {
+        flex: 1;
+        min-width: 180px;
+        padding: 10px 14px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 15px;
+      }
+      .key-row input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15);
+      }
+      .panels {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+      @media (max-width: 700px) {
+        .panels {
+          grid-template-columns: 1fr;
+        }
+      }
+      .panel {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+      .panel-header {
+        padding: 12px 16px;
+        background: linear-gradient(to bottom, #f1f5f9, #f8fafc);
+        border-bottom: 1px solid var(--border);
+        font-weight: 600;
+        color: var(--secondary);
+        font-size: 0.9rem;
+      }
+      .panel-content {
+        padding: 12px;
+      }
+      .panel-content textarea {
+        width: 100%;
+        min-height: 280px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 14px;
+        line-height: 1.7;
+        resize: vertical;
+        font-family: inherit;
+      }
+      .panel-content textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+      }
+      .actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 16px;
+        flex-wrap: wrap;
+      }
+      .btn {
+        padding: 10px 18px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .btn-primary {
+        background: var(--primary);
+        color: #fff;
+      }
+      .btn-primary:hover {
+        background: var(--primary-hover);
+      }
+      .btn-secondary {
+        background: #e2e8f0;
+        color: var(--text);
+      }
+      .btn-secondary:hover {
+        background: #cbd5e1;
+      }
+      .result-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .result-bar .copy-btn {
+        padding: 8px 14px;
+        background: var(--primary);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      .result-bar .copy-btn:hover {
+        background: var(--primary-hover);
+      }
+      .toast {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%) translateY(80px);
+        padding: 12px 20px;
+        background: var(--text);
+        color: #fff;
+        border-radius: 8px;
+        font-size: 14px;
+        opacity: 0;
+        transition: transform 0.3s, opacity 0.3s;
+        z-index: 100;
+      }
+      .toast.show {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>单词列表乱序加密 / 解密工具</h1>
+
+      <div class="key-row">
+        <label for="key">密钥（Key）：</label>
+        <input
+          type="text"
+          id="key"
+          placeholder="请输入密钥，相同密钥产生相同乱序结果"
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="panels">
+        <div class="panel">
+          <div class="panel-header">源文本</div>
+          <div class="panel-content">
+            <textarea
+              id="source"
+              placeholder="在此粘贴或输入词汇列表&#10;可带序号，如：1. apple  2. banana  a) cat"
+            ></textarea>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">处理结果</div>
+          <div class="panel-content">
+            <textarea id="result" readonly placeholder="乱序或还原后的结果将显示在这里"></textarea>
+            <div class="result-bar">
+              <span style="font-size: 13px; color: var(--secondary)">结果可一键复制</span>
+              <button type="button" class="copy-btn" id="copyBtn">一键复制</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="btn btn-primary" id="encryptBtn">乱序加密</button>
+        <button type="button" class="btn btn-primary" id="decryptBtn">还原顺序</button>
+      </div>
+    </div>
+
+    <div class="toast" id="toast">已复制到剪贴板</div>
+
+    <script>
+      (function () {
+        // ---------- 确定性伪随机（Mulberry32）----------
+        function mulberry32(seed) {
+          return function () {
+            var t = (seed += 0x6d2b79f5);
+            t = Math.imul(t ^ (t >>> 15), t | 1);
+            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+          };
+        }
+
+        function hashString(str) {
+          var h = 0;
+          for (var i = 0; i < str.length; i++) {
+            h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+          }
+          return h >>> 0;
+        }
+
+        // ---------- 数据清洗：去除每行开头序号与空白（如 1. 2. a) (1) 等）----------
+        var leadingNumbering =
+          /^\s*(?:[\(\（]?\s*\d+\s*[\)\）]?\s*[\.\、\．]?\s*|[\(\（]?\s*[a-zA-Z]\s*[\)\）]?\s*[\.\、\．]?\s*|\d+\s*[\.\、\．]\s*)\s*/;
+
+        function cleanLines(text) {
+          return text
+            .split(/\r?\n/)
+            .map(function (line) {
+              return line.replace(leadingNumbering, "").trim();
+            })
+            .filter(function (line) {
+              return line.length > 0;
+            });
+        }
+
+        // ---------- Fisher-Yates 洗牌（使用给定 RNG）----------
+        function shuffleWithRng(arr, random) {
+          var a = arr.slice();
+          for (var i = a.length - 1; i > 0; i--) {
+            var j = Math.floor(random() * (i + 1));
+            var t = a[i];
+            a[i] = a[j];
+            a[j] = t;
+          }
+          return a;
+        }
+
+        // 对索引数组 [0,1,...,n-1] 洗牌，得到“新位置 -> 原下标”的排列
+        function getShufflePermutation(n, random) {
+          var indices = [];
+          for (var i = 0; i < n; i++) indices.push(i);
+          return shuffleWithRng(indices, random);
+        }
+
+        function getKeySeed(key) {
+          return hashString(String(key).trim()) || 1;
+        }
+
+        function getRandom(key) {
+          return mulberry32(getKeySeed(key));
+        }
+
+        // ---------- 乱序加密 ----------
+        function encrypt() {
+          var keyInput = document.getElementById("key").value.trim();
+          if (!keyInput) {
+            alert("请输入密钥（Key）后再操作。");
+            return;
+          }
+          var raw = document.getElementById("source").value;
+          var lines = cleanLines(raw);
+          if (lines.length === 0) {
+            document.getElementById("result").value = "";
+            return;
+          }
+          var random = getRandom(keyInput);
+          var shuffled = shuffleWithRng(lines, random);
+          var numbered = shuffled.map(function (line, i) {
+            return i + 1 + ". " + line;
+          });
+          document.getElementById("result").value = numbered.join("\n");
+        }
+
+        // ---------- 还原顺序（解密）----------
+        function decrypt() {
+          var keyInput = document.getElementById("key").value.trim();
+          if (!keyInput) {
+            alert("请输入密钥（Key）后再操作。");
+            return;
+          }
+          var raw = document.getElementById("source").value;
+          var lines = cleanLines(raw);
+          if (lines.length === 0) {
+            document.getElementById("result").value = "";
+            return;
+          }
+          var n = lines.length;
+          var random = getRandom(keyInput);
+          // 用同一密钥对索引洗牌，得到 perm：新位置 i 对应原下标 perm[i]
+          var perm = getShufflePermutation(n, random);
+          // 逆向映射：原下标 j 对应现在的位置 invPerm[j]
+          var invPerm = [];
+          for (var i = 0; i < n; i++) invPerm[perm[i]] = i;
+          var restored = [];
+          for (var j = 0; j < n; j++) restored[j] = lines[invPerm[j]];
+          var numbered = restored.map(function (line, i) {
+            return i + 1 + ". " + line;
+          });
+          document.getElementById("result").value = numbered.join("\n");
+        }
+
+        function copyResult() {
+          var resultEl = document.getElementById("result");
+          var text = resultEl.value;
+          if (!text) return;
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(
+              function () {
+                showToast("已复制到剪贴板");
+              },
+              function () {
+                fallbackCopy(text);
+              }
+            );
+          } else {
+            fallbackCopy(text);
+          }
+        }
+
+        function fallbackCopy(text) {
+          var ta = document.createElement("textarea");
+          ta.value = text;
+          ta.style.position = "fixed";
+          ta.style.left = "-9999px";
+          document.body.appendChild(ta);
+          ta.select();
+          try {
+            document.execCommand("copy");
+            showToast("已复制到剪贴板");
+          } catch (e) {
+            showToast("复制失败，请手动选择复制");
+          }
+          document.body.removeChild(ta);
+        }
+
+        function showToast(msg) {
+          var toast = document.getElementById("toast");
+          toast.textContent = msg;
+          toast.classList.add("show");
+          clearTimeout(toast._tid);
+          toast._tid = setTimeout(function () {
+            toast.classList.remove("show");
+          }, 2000);
+        }
+
+        document.getElementById("encryptBtn").addEventListener("click", encrypt);
+        document.getElementById("decryptBtn").addEventListener("click", decrypt);
+        document.getElementById("copyBtn").addEventListener("click", copyResult);
+      })();
+    </script>
+  </body>
+</html>
