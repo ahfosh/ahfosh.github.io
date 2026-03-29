@@ -1,0 +1,30 @@
+create-pages:
+  stage: deploy
+  script:
+    - mkdir -p public
+    - cp -r 404.html index.html styles.css tools_recommendation.html public/ 2>/dev/null || true
+    - cp -r chaofun language olympic rank test tuxun xiaoce public/ 2>/dev/null || true
+  pages: true
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+mirror-from-github:
+  stage: deploy
+  before_script:
+    - apt-get update -y && apt-get install -y git
+  script:
+    - git config --global user.email "ci@example.com"
+    - git config --global user.name "GitLab CI"
+
+    # 克隆 GitHub 仓库
+    - git clone https://github.com/ahfosh/ahfosh.github.io.git repo
+    - cd repo
+
+    # 添加 GitLab 远程（用 Token）
+    - git remote add gitlab https://oauth2:${GITLAB_TOKEN}@gitlab.com/ahfosh/ahfosh.gitlab.io.git
+
+    # 强制镜像推送
+    - git push --mirror gitlab
+
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
