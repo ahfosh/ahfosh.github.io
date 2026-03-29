@@ -16,7 +16,7 @@ async function fetchSVG(url) {
       throw new Error("SVG parsing error");
     }
     const paths = svgDoc.querySelectorAll("path");
-    paths.forEach((path) => {
+    paths.forEach(path => {
       const id = path.getAttribute("id");
       if (id) {
         path.setAttribute("data-id", id); // Store the id in data-id attribute
@@ -31,7 +31,7 @@ async function fetchSVG(url) {
     }
     const csvText = await csvResponse.text();
     const csvLines = csvText.split("\n");
-    csvLines.forEach((line) => {
+    csvLines.forEach(line => {
       const [id, alias] = line.trim().split(","); // Assuming ID and alias separated by comma
       if (id && alias) {
         idAliasMap.set(id, alias); // Store ID and corresponding alias in the map
@@ -95,10 +95,7 @@ function checkInput() {
   }
   const currentPathId = currentPath.dataset.id;
   const currentPathAlias = idAliasMap.get(currentPathId); // Check if input matches alias
-  if (
-    inputId.length > 0 &&
-    (inputId === currentPathId || inputId === currentPathAlias)
-  ) {
+  if (inputId.length > 0 && (inputId === currentPathId || inputId === currentPathAlias)) {
     loadAndDisplaySVG(svgPaths[currentIndex]);
   } else if (inputId.length > 0) {
     shouldStopExecution = true; // Set flag to stop execution
