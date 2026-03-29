@@ -16,5 +16,5 @@ jobs:
       - name: Push to GitLab
         run: |
           git remote add gitlab https://oauth2:${{ secrets.GITLAB_TOKEN }}@gitlab.com/ahfosh/ahfosh.gitlab.io.git
-          git push gitlab --all
-          git push gitlab --tags
+          git push -f gitlab --all
+          git push -f gitlab --tags
