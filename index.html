@@ -14,12 +14,7 @@
 
     <form action="" id="searchForm">
       <button type="button" id="searchEngineButton">Baidu</button>
-      <input
-        type="text"
-        id="searchQuery"
-        name="query"
-        placeholder="Typing..."
-      />
+      <input type="text" id="searchQuery" name="query" placeholder="Typing..." />
       <input type="submit" value="Search" />
     </form>
 
@@ -41,9 +36,7 @@
         <a class="quick-link" href="chaofun/price_guess.html">物价竞猜统计</a>
         <a class="quick-link" href="xiaoce/svg_extractor/">SVGid提取</a>
         <a class="quick-link" href="xiaoce/svg_generator/">SVG地区生成器</a>
-        <a class="quick-link" href="xiaoce/toponymic_abbreviation.html"
-          >全名转专名</a
-        >
+        <a class="quick-link" href="xiaoce/toponymic_abbreviation.html">全名转专名</a>
       </p>
     </div>
 
@@ -72,7 +65,7 @@
 
     <footer>
       <p>
-        &copy; 2019-2025 ahfosh_studio. All Rights Reserved. Website based on
+        &copy; 2019-2026 ahfosh_studio. All Rights Reserved. Website based on
         <a href="https://github.com/ahfosh/toolset">ahfosh's toolset</a>
       </p>
     </footer>
@@ -95,22 +88,17 @@
         }
       });
 
-      document
-        .getElementById("searchForm")
-        .addEventListener("submit", function (event) {
-          event.preventDefault();
-          var query = document.getElementById("searchQuery").value;
-          if (currentSearchEngine === "baidu") {
-            window.location.href =
-              "https://www.baidu.com/s?wd=" + encodeURIComponent(query);
-          } else if (currentSearchEngine === "google") {
-            window.location.href =
-              "https://www.google.com/search?q=" + encodeURIComponent(query);
-          } else if (currentSearchEngine === "bing") {
-            window.location.href =
-              "https://www.bing.com/search?q=" + encodeURIComponent(query);
-          }
-        });
+      document.getElementById("searchForm").addEventListener("submit", function (event) {
+        event.preventDefault();
+        var query = document.getElementById("searchQuery").value;
+        if (currentSearchEngine === "baidu") {
+          window.location.href = "https://www.baidu.com/s?wd=" + encodeURIComponent(query);
+        } else if (currentSearchEngine === "google") {
+          window.location.href = "https://www.google.com/search?q=" + encodeURIComponent(query);
+        } else if (currentSearchEngine === "bing") {
+          window.location.href = "https://www.bing.com/search?q=" + encodeURIComponent(query);
+        }
+      });
 
       window.onload = function () {
         var links = document.getElementsByTagName("a");

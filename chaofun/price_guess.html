@@ -134,12 +134,7 @@
     </header>
 
     <div class="container">
-      <textarea
-        id="chatRecord"
-        rows="20"
-        placeholder="粘贴聊天记录到这里"
-        autofocus
-      ></textarea>
+      <textarea id="chatRecord" rows="20" placeholder="粘贴聊天记录到这里" autofocus></textarea>
       <br />
       <label for="standardNumber">实际物价</label>
       <input type="number" id="standardNumber" />
@@ -149,7 +144,7 @@
 
     <footer>
       <p>
-        &copy; 2019-2025 ahfosh_studio. All Rights Reserved. Website based on
+        &copy; 2019-2026 ahfosh_studio. All Rights Reserved. Website based on
         <a href="https://github.com/ahfosh/toolset">ahfosh's toolset</a>
       </p>
     </footer>
@@ -178,9 +173,7 @@
           messages.push(message);
         }
 
-        var standardNumber = parseFloat(
-          document.getElementById("standardNumber").value
-        );
+        var standardNumber = parseFloat(document.getElementById("standardNumber").value);
 
         displayMessages(messages, standardNumber);
       }

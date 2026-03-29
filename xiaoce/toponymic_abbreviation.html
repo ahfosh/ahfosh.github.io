@@ -109,9 +109,7 @@
   <body>
     <header>
       <h2>地名简称查询</h2>
-      <p>
-        在下面的输入框中输入地名（用逗号、制表符、空格或换行符分隔），然后点击按钮
-      </p>
+      <p>在下面的输入框中输入地名（用逗号、制表符、空格或换行符分隔），然后点击按钮</p>
     </header>
 
     <div class="container">
@@ -136,19 +134,14 @@
     </div>
 
     <footer>
-      <p>
-        &copy; 2019-2025 ahfosh_studio. Data created by the site. All Rights
-        Reserved.
-      </p>
+      <p>&copy; 2019-2026 ahfosh_studio. Data created by the site. All Rights Reserved.</p>
     </footer>
 
     <script>
       function searchAbbreviations() {
         var input = document.getElementById("input").value;
         var names = input.split(/[\s,\/]+/);
-        var tableBody = document
-          .getElementById("resultTable")
-          .getElementsByTagName("tbody")[0];
+        var tableBody = document.getElementById("resultTable").getElementsByTagName("tbody")[0];
         tableBody.innerHTML = ""; // 清空表格内容
         var xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function () {

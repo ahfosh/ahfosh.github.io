@@ -1,64 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>中国行政区划代码测验</title>
 
-<head>
+    <link rel="stylesheet" href="admin_code.css" />
+    <script src="admin_code.js"></script>
 
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>中国行政区划代码测验</title>
+    <style>
+      #display-box,
+      #refresh-btn,
+      #input-box,
+      #submit-btn,
+      #hint-btn,
+      #hint-text {
+        display: none;
+        /* 初始隐藏 */
+      }
 
-	<link rel="stylesheet" href="admin_code.css">
-	<script src="admin_code.js"></script>
+      .level-btns {
+        margin-top: 20px;
+        font-size: 18px;
+      }
+    </style>
+  </head>
 
-	<style>
-		#display-box,
-		#refresh-btn,
-		#input-box,
-		#submit-btn,
-		#hint-btn,
-		#hint-text {
-			display: none;
-			/* 初始隐藏 */
-		}
+  <body>
+    <header>
+      <h2>中国行政区划代码测验 为图寻中国而制</h2>
+      <p>支持全名/专名</p>
+    </header>
 
-		.level-btns {
-			margin-top: 20px;
-			font-size: 18px;
-		}
-	</style>
+    <div class="level-btns">
+      <h3>
+        请选择政区级别
+        <br />
+        <button class="level-btn" value="county">县级</button>
+        <button class="level-btn" value="prefecture">地级</button>
+      </h3>
+    </div>
 
-</head>
+    <div class="guess">
+      <div id="display-box"></div>
+      <button id="refresh-btn">刷新</button>
+      <input type="text" id="input-box" placeholder="请输入行政区名" />
+      <button id="submit-btn">提交</button>
+      <br />
+      <button id="hint-btn" style="display: none">提示</button>
+      <div id="hint-text" style="display: none"></div>
+    </div>
 
-<body>
-
-	<header>
-		<h2>中国行政区划代码测验 为图寻中国而制</h2>
-		<p>支持全名/专名</p>
-	</header>
-
-	<div class="level-btns">
-		<h3>请选择政区级别
-			<br>
-			<button class="level-btn" value="county">县级</button>
-			<button class="level-btn" value="prefecture">地级</button>
-		</h3>
-	</div>
-
-	<div class="guess">
-		<div id="display-box"></div>
-		<button id="refresh-btn">刷新</button>
-		<input type="text" id="input-box" placeholder="请输入行政区名">
-		<button id="submit-btn">提交</button>
-		<br>
-		<button id="hint-btn" style="display: none;">提示</button>
-		<div id="hint-text" style="display: none;"></div>
-	</div>
-
-	<footer>
-		<p>数据来自民政部</p>
-		<p>&copy; 2019-2025 ahfosh_studio. All Rights Reserved.</p>
-	</footer>
-
-</body>
-
+    <footer>
+      <p>数据来自民政部</p>
+      <p>&copy; 2019-2026 ahfosh_studio. All Rights Reserved.</p>
+    </footer>
+  </body>
 </html>
