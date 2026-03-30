@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>答题页</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f5efe5;
+        --panel: rgba(255, 252, 247, 0.9);
+        --panel-strong: #fffaf2;
+        --text: #2f241d;
+        --muted: #74665b;
+        --border: rgba(93, 70, 52, 0.16);
+        --accent: #bf5a36;
+        --accent-hover: #a04727;
+        --accent-soft: rgba(191, 90, 54, 0.12);
+        --shadow: 0 24px 60px rgba(74, 46, 24, 0.14);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: var(--text);
+        background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.65), transparent 34%),
+          radial-gradient(circle at right 12%, rgba(255, 214, 182, 0.4), transparent 28%),
+          linear-gradient(180deg, #f9f5ee 0%, #f1e7d8 100%);
+      }
+
+      .page {
+        width: min(1040px, calc(100vw - 32px));
+        margin: 0 auto;
+        padding: 40px 0 120px;
+      }
+
+      .hero {
+        padding: 28px;
+        border-radius: 28px;
+        border: 1px solid rgba(255, 255, 255, 0.45);
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(255, 245, 233, 0.72)),
+          rgba(255, 255, 255, 0.75);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(18px);
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.72);
+        color: var(--muted);
+        font-size: 13px;
+        letter-spacing: 0.04em;
+      }
+
+      h1 {
+        margin: 18px 0 10px;
+        font-size: clamp(30px, 5vw, 54px);
+        line-height: 1.02;
+      }
+
+      .hero p {
+        margin: 0;
+        max-width: 700px;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.7;
+      }
+
+      .workspace {
+        margin-top: 24px;
+        display: grid;
+        gap: 20px;
+        grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
+        align-items: start;
+      }
+
+      .panel {
+        border-radius: 24px;
+        border: 1px solid var(--border);
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(14px);
+      }
+
+      .controls {
+        padding: 22px;
+        position: sticky;
+        top: 20px;
+      }
+
+      .section-title {
+        margin: 0 0 12px;
+        font-size: 18px;
+      }
+
+      .section-copy {
+        margin: 0 0 18px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.7;
+      }
+
+      .upload-zone {
+        position: relative;
+        display: grid;
+        gap: 12px;
+        padding: 18px;
+        border: 1.5px dashed rgba(191, 90, 54, 0.35);
+        border-radius: 20px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 246, 237, 0.92));
+        transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .upload-zone.dragover {
+        border-color: var(--accent);
+        transform: translateY(-1px);
+        box-shadow: 0 16px 30px rgba(191, 90, 54, 0.12);
+      }
+
+      .upload-zone strong {
+        font-size: 18px;
+      }
+
+      .upload-zone span {
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.7;
+      }
+
+      .button-row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      button,
+      .upload-trigger {
+        border: 0;
+        border-radius: 999px;
+        padding: 12px 18px;
+        font: inherit;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+      }
+
+      .upload-trigger {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--accent);
+        color: #fffaf5;
+        box-shadow: 0 12px 28px rgba(191, 90, 54, 0.22);
+      }
+
+      .upload-trigger:hover,
+      .download-button:hover:not(:disabled) {
+        transform: translateY(-1px);
+        background: var(--accent-hover);
+      }
+
+      .ghost-button {
+        background: rgba(255, 255, 255, 0.82);
+        color: var(--text);
+        border: 1px solid var(--border);
+      }
+
+      .ghost-button:hover {
+        transform: translateY(-1px);
+        background: #ffffff;
+      }
+
+      input[type="file"] {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      .meta-list {
+        display: grid;
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .meta-item {
+        padding: 14px 16px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.76);
+        border: 1px solid rgba(93, 70, 52, 0.1);
+      }
+
+      .meta-label {
+        display: block;
+        margin-bottom: 6px;
+        color: var(--muted);
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .meta-value {
+        font-size: 15px;
+        line-height: 1.6;
+        word-break: break-word;
+      }
+
+      .tips {
+        margin: 18px 0 0;
+        padding-left: 18px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.7;
+      }
+
+      .preview-shell {
+        padding: 22px;
+      }
+
+      .preview-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+
+      .preview-title {
+        margin: 0;
+        font-size: 20px;
+      }
+
+      .preview-subtitle {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .status-pill {
+        white-space: nowrap;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 13px;
+      }
+
+      .preview-surface {
+        min-height: 460px;
+        padding: 26px;
+        border-radius: 20px;
+        background: var(--panel-strong);
+        border: 1px solid rgba(93, 70, 52, 0.08);
+        overflow: auto;
+      }
+
+      .empty-state {
+        display: grid;
+        place-items: center;
+        min-height: 408px;
+        text-align: center;
+        color: var(--muted);
+      }
+
+      .empty-state strong {
+        display: block;
+        margin-bottom: 10px;
+        color: var(--text);
+        font-size: 24px;
+      }
+
+      .markdown-body {
+        font-size: 16px;
+        line-height: 1.8;
+        word-break: break-word;
+      }
+
+      .markdown-body > :first-child {
+        margin-top: 0;
+      }
+
+      .markdown-body > :last-child {
+        margin-bottom: 0;
+      }
+
+      .markdown-body h1,
+      .markdown-body h2,
+      .markdown-body h3,
+      .markdown-body h4,
+      .markdown-body h5,
+      .markdown-body h6 {
+        margin: 1.4em 0 0.7em;
+        line-height: 1.25;
+      }
+
+      .markdown-body p,
+      .markdown-body ul,
+      .markdown-body ol,
+      .markdown-body blockquote,
+      .markdown-body table,
+      .markdown-body pre {
+        margin: 0 0 1em;
+      }
+
+      .markdown-body ul,
+      .markdown-body ol {
+        padding-left: 1.5em;
+      }
+
+      .markdown-body blockquote {
+        padding: 12px 16px;
+        border-left: 4px solid rgba(191, 90, 54, 0.35);
+        background: rgba(191, 90, 54, 0.08);
+        color: #5d4a3f;
+        border-radius: 0 14px 14px 0;
+      }
+
+      .markdown-body code {
+        padding: 2px 6px;
+        border-radius: 8px;
+        background: rgba(93, 70, 52, 0.08);
+        font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+        font-size: 0.92em;
+      }
+
+      .markdown-body pre {
+        padding: 16px;
+        overflow: auto;
+        border-radius: 16px;
+        background: #2c241f;
+        color: #f9f3ee;
+      }
+
+      .markdown-body pre code {
+        padding: 0;
+        background: transparent;
+        color: inherit;
+      }
+
+      .markdown-body table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .markdown-body th,
+      .markdown-body td {
+        padding: 10px 12px;
+        border: 1px solid rgba(93, 70, 52, 0.12);
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .answer-field {
+        display: block;
+        width: min(100%, 720px);
+        margin: 12px 0;
+      }
+
+      .answer-label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .answer-input {
+        width: 100%;
+        min-height: 112px;
+        padding: 14px 16px;
+        border-radius: 18px;
+        border: 1px solid rgba(93, 70, 52, 0.16);
+        background: rgba(255, 255, 255, 0.96);
+        color: var(--text);
+        font: inherit;
+        line-height: 1.7;
+        resize: vertical;
+        outline: none;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .answer-input:focus {
+        border-color: rgba(191, 90, 54, 0.6);
+        box-shadow: 0 0 0 4px rgba(191, 90, 54, 0.12);
+      }
+
+      .download-button {
+        position: fixed;
+        right: 24px;
+        bottom: 24px;
+        z-index: 20;
+        padding: 16px 22px;
+        background: var(--accent);
+        color: #fffaf5;
+        box-shadow: 0 18px 42px rgba(191, 90, 54, 0.28);
+      }
+
+      .download-button:disabled {
+        cursor: not-allowed;
+        opacity: 0.45;
+        box-shadow: none;
+      }
+
+      .status-line {
+        margin-top: 14px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      @media (max-width: 920px) {
+        .workspace {
+          grid-template-columns: 1fr;
+        }
+
+        .controls {
+          position: static;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .page {
+          width: min(100vw - 20px, 1040px);
+          padding-top: 20px;
+          padding-bottom: 108px;
+        }
+
+        .hero,
+        .controls,
+        .preview-shell,
+        .preview-surface {
+          padding: 18px;
+        }
+
+        .preview-header {
+          flex-direction: column;
+        }
+
+        .download-button {
+          right: 14px;
+          bottom: 14px;
+          width: calc(100vw - 28px);
+          justify-content: center;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="page">
+      <section class="workspace">
+        <aside class="panel controls">
+          <h2 class="section-title">上传与导出</h2>
+          <p class="section-copy">支持 `.md` / `.markdown` 文件。上传后会立即生成可填写预览。</p>
+
+          <label class="upload-zone" id="upload-zone">
+            <strong>拖入文件，或点击这里选择</strong>
+            <span>只识别精确字符串 `{textarea}`，出现几个就生成几个答题区域。</span>
+            <div class="button-row">
+              <button class="upload-trigger" id="select-button" type="button">选择文件</button>
+              <button class="ghost-button" id="reload-button" type="button">重新选择</button>
+            </div>
+            <input id="file-input" type="file" accept=".md,.markdown,text/markdown,text/plain" />
+          </label>
+
+          <div class="meta-list">
+            <div class="meta-item">
+              <span class="meta-label">当前文件</span>
+              <div class="meta-value" id="file-name">尚未上传</div>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">答题区域</span>
+              <div class="meta-value" id="slot-count">0 个</div>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">完成进度</span>
+              <div class="meta-value" id="progress-text">0 / 0</div>
+            </div>
+          </div>
+
+          <ul class="tips">
+            <li>下载文件名会自动加上 `-filled` 后缀。</li>
+            <li>如果某个答题区留空，对应位置会保留原始 `{textarea}`。</li>
+            <li>Markdown 预览优先按正常格式渲染，下载内容仍然是 `.md` 文本。</li>
+          </ul>
+
+          <div class="status-line" id="status-line">等待上传 markdown 文件。</div>
+        </aside>
+
+        <section class="panel preview-shell">
+          <div class="preview-header">
+            <div>
+              <h2 class="preview-title">答题预览</h2>
+              <p class="preview-subtitle">
+                上传文件后，这里会把 markdown 内容和答题框组合显示出来。
+              </p>
+            </div>
+            <span class="status-pill" id="render-mode">尚未加载</span>
+          </div>
+
+          <div class="preview-surface" id="preview-surface">
+            <div class="empty-state" id="empty-state">
+              <div>
+                <strong>还没有内容</strong>
+                <span>先上传一个包含 `{textarea}` 的 markdown 文件。</span>
+              </div>
+            </div>
+            <div class="markdown-body" id="preview-body" hidden></div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <button class="download-button" id="download-button" type="button" disabled>
+      下载已填写 Markdown
+    </button>
+
+    <script>
+      const PLACEHOLDER = "{textarea}";
+      const PLACEHOLDER_REGEX = /\{textarea\}/g;
+
+      const state = {
+        answers: [],
+        fileName: "",
+        lineEnding: "\n",
+        markdown: "",
+        placeholderCount: 0,
+      };
+
+      const fileInput = document.getElementById("file-input");
+      const selectButton = document.getElementById("select-button");
+      const reloadButton = document.getElementById("reload-button");
+      const uploadZone = document.getElementById("upload-zone");
+      const fileNameEl = document.getElementById("file-name");
+      const slotCountEl = document.getElementById("slot-count");
+      const progressTextEl = document.getElementById("progress-text");
+      const statusLineEl = document.getElementById("status-line");
+      const renderModeEl = document.getElementById("render-mode");
+      const emptyStateEl = document.getElementById("empty-state");
+      const previewBodyEl = document.getElementById("preview-body");
+      const downloadButton = document.getElementById("download-button");
+
+      selectButton.addEventListener("click", event => {
+        event.preventDefault();
+        event.stopPropagation();
+        fileInput.value = "";
+        fileInput.click();
+      });
+
+      fileInput.addEventListener("change", async event => {
+        const file = event.target.files?.[0];
+        if (!file) {
+          return;
+        }
+
+        await loadMarkdownFile(file);
+        fileInput.value = "";
+      });
+
+      reloadButton.addEventListener("click", event => {
+        event.preventDefault();
+        event.stopPropagation();
+        fileInput.value = "";
+        fileInput.click();
+      });
+
+      downloadButton.addEventListener("click", () => {
+        if (!state.markdown) {
+          return;
+        }
+
+        const finalMarkdown = buildFinalMarkdown();
+        const blob = new Blob([finalMarkdown], {
+          type: "text/markdown;charset=utf-8",
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        link.href = url;
+        link.download = buildDownloadFileName(state.fileName);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        window.setTimeout(() => {
+          URL.revokeObjectURL(url);
+        }, 0);
+
+        statusLineEl.textContent = "已生成并下载填写后的 markdown。";
+      });
+
+      ["dragenter", "dragover"].forEach(eventName => {
+        uploadZone.addEventListener(eventName, event => {
+          event.preventDefault();
+          uploadZone.classList.add("dragover");
+        });
+      });
+
+      ["dragleave", "dragend", "drop"].forEach(eventName => {
+        uploadZone.addEventListener(eventName, event => {
+          event.preventDefault();
+          uploadZone.classList.remove("dragover");
+        });
+      });
+
+      uploadZone.addEventListener("drop", async event => {
+        const file = event.dataTransfer?.files?.[0];
+        if (!file) {
+          return;
+        }
+
+        await loadMarkdownFile(file);
+      });
+
+      async function loadMarkdownFile(file) {
+        const markdown = await file.text();
+        const placeholderCount = (markdown.match(PLACEHOLDER_REGEX) || []).length;
+
+        state.markdown = markdown;
+        state.fileName = file.name;
+        state.placeholderCount = placeholderCount;
+        state.answers = new Array(placeholderCount).fill("");
+        state.lineEnding = markdown.includes("\r\n") ? "\r\n" : "\n";
+
+        fileNameEl.textContent = file.name;
+        slotCountEl.textContent = `${placeholderCount} 个`;
+        downloadButton.disabled = false;
+
+        if (placeholderCount === 0) {
+          statusLineEl.textContent =
+            "已上传文件，但没有检测到 {textarea}。下载时会直接导出原始 markdown。";
+        } else {
+          statusLineEl.textContent = `已载入 ${placeholderCount} 个答题区域。`;
+        }
+
+        renderPreview();
+        updateProgress();
+      }
+
+      function renderPreview() {
+        if (!state.markdown) {
+          previewBodyEl.hidden = true;
+          emptyStateEl.hidden = false;
+          renderModeEl.textContent = "尚未加载";
+          return;
+        }
+
+        emptyStateEl.hidden = true;
+        previewBodyEl.hidden = false;
+
+        let slotIndex = 0;
+        const markedAvailable =
+          typeof window.marked !== "undefined" && typeof window.marked.parse === "function";
+        const purifierAvailable =
+          typeof window.DOMPurify !== "undefined" &&
+          typeof window.DOMPurify.sanitize === "function";
+
+        const preparedMarkdown = state.markdown.replace(PLACEHOLDER_REGEX, () => {
+          const token = `__TEXTAREA_SLOT_${slotIndex}__`;
+          const marker = `<span class="textarea-slot" data-index="${slotIndex}">${token}</span>`;
+          slotIndex += 1;
+          return marker;
+        });
+
+        if (markedAvailable) {
+          const rendered = window.marked.parse(preparedMarkdown, {
+            breaks: true,
+            gfm: true,
+          });
+
+          previewBodyEl.innerHTML = purifierAvailable
+            ? window.DOMPurify.sanitize(rendered, { ADD_ATTR: ["data-index"] })
+            : rendered;
+
+          renderModeEl.textContent = purifierAvailable
+            ? "Markdown 渲染模式"
+            : "Markdown 渲染模式（未清洗 HTML）";
+        } else {
+          previewBodyEl.innerHTML = "";
+          const fallback = document.createElement("pre");
+          fallback.textContent = state.markdown;
+          previewBodyEl.appendChild(fallback);
+
+          renderModeEl.textContent = "纯文本回退模式";
+        }
+
+        const slots = previewBodyEl.querySelectorAll(".textarea-slot");
+
+        slots.forEach(slot => {
+          const index = Number(slot.dataset.index);
+          slot.replaceWith(createAnswerField(index));
+        });
+
+        if (!slots.length && state.placeholderCount > 0 && !markedAvailable) {
+          previewBodyEl.innerHTML = "";
+          renderPlainFallback();
+        }
+      }
+
+      function renderPlainFallback() {
+        const fragment = document.createDocumentFragment();
+        const segments = state.markdown.split(PLACEHOLDER_REGEX);
+
+        segments.forEach((segment, index) => {
+          if (segment) {
+            const block = document.createElement("pre");
+            block.textContent = segment;
+            fragment.appendChild(block);
+          }
+
+          if (index < state.placeholderCount) {
+            fragment.appendChild(createAnswerField(index));
+          }
+        });
+
+        previewBodyEl.innerHTML = "";
+        previewBodyEl.appendChild(fragment);
+      }
+
+      function createAnswerField(index) {
+        const wrapper = document.createElement("label");
+        wrapper.className = "answer-field";
+
+        const label = document.createElement("span");
+        label.className = "answer-label";
+        label.textContent = `答题区 ${index + 1}`;
+
+        const textarea = document.createElement("textarea");
+        textarea.className = "answer-input";
+        textarea.rows = 4;
+        textarea.placeholder = "在这里填写内容";
+        textarea.value = state.answers[index] || "";
+        textarea.setAttribute("aria-label", `答题区 ${index + 1}`);
+
+        textarea.addEventListener("input", event => {
+          state.answers[index] = event.target.value;
+          autoResizeTextarea(textarea);
+          updateProgress();
+        });
+
+        wrapper.append(label, textarea);
+        autoResizeTextarea(textarea);
+
+        return wrapper;
+      }
+
+      function autoResizeTextarea(textarea) {
+        textarea.style.height = "auto";
+        textarea.style.height = `${Math.max(textarea.scrollHeight, 112)}px`;
+      }
+
+      function updateProgress() {
+        const answeredCount = state.answers.filter(value => value.trim().length > 0).length;
+        progressTextEl.textContent = `${answeredCount} / ${state.placeholderCount}`;
+      }
+
+      function buildFinalMarkdown() {
+        let currentIndex = 0;
+
+        return state.markdown.replace(PLACEHOLDER_REGEX, () => {
+          const answer = state.answers[currentIndex] || "";
+          currentIndex += 1;
+
+          if (!answer.trim()) {
+            return PLACEHOLDER;
+          }
+
+          return answer.replace(/\r?\n/g, state.lineEnding);
+        });
+      }
+
+      function buildDownloadFileName(fileName) {
+        const fallbackName = "quiz-filled.md";
+
+        if (!fileName) {
+          return fallbackName;
+        }
+
+        const match = fileName.match(/^(.*?)(\.[^.]+)?$/);
+        if (!match) {
+          return fallbackName;
+        }
+
+        const baseName = match[1] || "quiz";
+        const extension = match[2] || ".md";
+
+        return `${baseName}-filled${extension}`;
+      }
+    </script>
+  </body>
+</html>
