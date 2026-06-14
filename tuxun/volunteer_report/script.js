@@ -15,12 +15,65 @@ const linkCount = document.getElementById("link-count");
 
 const TUXUN_ORIGIN = "https://tuxun.fun";
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const STORAGE_KEY = "tuxun_volunteer_report";
 
 let confirmedUserId = "";
 let roundOutputFormat = "replay-pano";
 let lastRoundItems = [];
 const outputLinks = { "round-output": [] };
 let invalidEntries = [];
+let saveStateTimer = null;
+
+function getStateSnapshot() {
+  return {
+    sourceLinks: sourceLinks.value,
+    presetUserId: presetUserIdInput.value,
+    confirmedUserId,
+    roundOutputFormat,
+    lastRoundItems,
+    roundOutputLinks: outputLinks["round-output"],
+    invalidEntries,
+  };
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(getStateSnapshot()));
+  } catch (error) {
+    // ignore storage quota or privacy mode errors
+  }
+}
+
+function scheduleSaveState() {
+  clearTimeout(saveStateTimer);
+  saveStateTimer = setTimeout(saveState, 300);
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      return false;
+    }
+
+    const state = JSON.parse(raw);
+    sourceLinks.value = typeof state.sourceLinks === "string" ? state.sourceLinks : "";
+    presetUserIdInput.value = typeof state.presetUserId === "string" ? state.presetUserId : "";
+    confirmedUserId = typeof state.confirmedUserId === "string" ? state.confirmedUserId : "";
+    roundOutputFormat = state.roundOutputFormat === "replayplayer" ? "replayplayer" : "replay-pano";
+    lastRoundItems = Array.isArray(state.lastRoundItems) ? state.lastRoundItems : [];
+    setOutputLinks(
+      roundOutput,
+      Array.isArray(state.roundOutputLinks) ? state.roundOutputLinks : [],
+    );
+    setInvalidOutput(Array.isArray(state.invalidEntries) ? state.invalidEntries : []);
+    updateLinkCount();
+    updateRoundPanelHeading();
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
 
 function extractLinks(text) {
   return text
@@ -132,12 +185,12 @@ function buildReplayPlayerLink(item, userId) {
   const params = new URLSearchParams();
   params.set("gameId", item.gameId);
 
-  if (item.round) {
-    params.set("round", item.round);
-  }
-
   if (userId) {
     params.set("userId", userId);
+  }
+
+  if (item.round) {
+    params.set("round", item.round);
   }
 
   return `${TUXUN_ORIGIN}/replayplayer?${params.toString()}`;
@@ -334,6 +387,8 @@ function confirmPresetUserId(showFeedback = true) {
   } else {
     setStatus("已清除预设 userId。");
   }
+
+  saveState();
 }
 
 function convertLinks() {
@@ -366,6 +421,8 @@ function convertLinks() {
     ),
     "success",
   );
+
+  saveState();
 }
 
 function toggleRoundFormat() {
@@ -394,6 +451,7 @@ function toggleRoundFormat() {
   }
 
   updateRoundPanelHeading();
+  saveState();
 }
 
 async function copyText(text) {
@@ -418,7 +476,10 @@ async function copyText(text) {
 
 sourceLinks.addEventListener("input", () => {
   updateLinkCount();
+  scheduleSaveState();
 });
+
+presetUserIdInput.addEventListener("input", scheduleSaveState);
 
 confirmUserIdBtn.addEventListener("click", () => {
   confirmPresetUserId();
@@ -438,6 +499,7 @@ function clearAll() {
   updateRoundPanelHeading();
   updateLinkCount(0);
   setStatus("");
+  saveState();
 }
 
 function closeClearConfirm() {
@@ -467,6 +529,8 @@ document.querySelectorAll("[data-copy-target]").forEach(button => {
   });
 });
 
-setOutputLinks(roundOutput, []);
-setInvalidOutput([]);
-updateRoundPanelHeading();
+if (!loadState()) {
+  setOutputLinks(roundOutput, []);
+  setInvalidOutput([]);
+  updateRoundPanelHeading();
+}
