@@ -1,0 +1,83 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>图寻复盘链接转换工具</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <main class="app-shell">
+    <header class="page-header">
+      <h1>图寻复盘链接转换工具</h1>
+      <button id="clear-btn" class="danger-button" type="button">清空</button>
+    </header>
+
+    <section class="workspace" aria-label="链接转换工作区">
+      <div class="input-panel">
+        <div class="preset-user">
+          <div class="preset-user-controls">
+            <input id="preset-user-id" type="text" inputmode="numeric" placeholder="预设 userId" />
+            <button id="confirm-user-id-btn" type="button">确认</button>
+          </div>
+        </div>
+
+        <div class="panel-heading">
+          <label for="source-links">原始链接</label>
+          <div id="status-message" class="status" role="status" aria-live="polite"></div>
+          <span id="link-count">0条链接</span>
+        </div>
+        <textarea id="source-links" placeholder="每行一个链接，形如：
+https://tuxun.fun/replay?gameId=1920613e-60fc-469d-98f2-0c9f0d24213b&round=1
+https://tuxun.fun/replayplayer?gameId=1920613e-60fc-469d-98f2-0c9f0d24213b&round=1&userId=USER_ID
+https://tuxun.fun/solo/1920613e-60fc-469d-98f2-0c9f0d24213b" spellcheck="false"></textarea>
+        <div class="actions">
+          <button id="convert-btn" type="button">转换</button>
+        </div>
+      </div>
+
+      <div class="output-grid">
+        <section class="output-panel" aria-labelledby="round-title">
+          <div class="panel-heading">
+            <h2 id="round-title">轮次</h2>
+            <button class="text-button" data-copy-target="round-output" type="button">复制</button>
+          </div>
+          <div id="round-output" class="link-list" aria-live="polite"></div>
+        </section>
+
+        <section class="output-panel" aria-labelledby="review-title">
+          <div class="panel-heading">
+            <h2 id="review-title">复盘</h2>
+            <button class="text-button" data-copy-target="review-output" type="button">复制</button>
+          </div>
+          <div id="review-output" class="link-list" aria-live="polite"></div>
+        </section>
+
+        <section class="output-panel" aria-labelledby="invalid-title">
+          <div class="panel-heading">
+            <h2 id="invalid-title">非法</h2>
+            <button class="text-button" data-copy-target="invalid-output" type="button">复制</button>
+          </div>
+          <div id="invalid-output" class="link-list" aria-live="polite"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <div id="clear-confirm" class="confirm-overlay" hidden>
+    <div class="confirm-panel" role="alertdialog" aria-modal="true" aria-labelledby="clear-confirm-title">
+      <h2 id="clear-confirm-title">确认清空？</h2>
+      <p>清空后，输入内容和当前转换结果都会被移除。</p>
+      <div class="confirm-actions">
+        <button id="cancel-clear-btn" class="ghost-button" type="button">取消</button>
+        <button id="confirm-clear-btn" class="danger-button" type="button">确认清空</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+
+</html>
