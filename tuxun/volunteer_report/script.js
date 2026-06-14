@@ -2,9 +2,10 @@ const sourceLinks = document.getElementById("source-links");
 const presetUserIdInput = document.getElementById("preset-user-id");
 const confirmUserIdBtn = document.getElementById("confirm-user-id-btn");
 const roundOutput = document.getElementById("round-output");
-const reviewOutput = document.getElementById("review-output");
+const roundTitle = document.getElementById("round-title");
 const invalidOutput = document.getElementById("invalid-output");
 const convertBtn = document.getElementById("convert-btn");
+const toggleRoundFormatBtn = document.getElementById("toggle-round-format-btn");
 const clearBtn = document.getElementById("clear-btn");
 const clearConfirm = document.getElementById("clear-confirm");
 const cancelClearBtn = document.getElementById("cancel-clear-btn");
@@ -13,8 +14,13 @@ const statusMessage = document.getElementById("status-message");
 const linkCount = document.getElementById("link-count");
 
 const TUXUN_ORIGIN = "https://tuxun.fun";
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 let confirmedUserId = "";
-const outputLinks = { "round-output": [], "review-output": [], "invalid-output": [] };
+let roundOutputFormat = "replay-pano";
+let lastRoundItems = [];
+const outputLinks = { "round-output": [] };
+let invalidEntries = [];
 
 function extractLinks(text) {
   return text
@@ -36,44 +42,82 @@ function uniqueInOrder(items) {
   });
 }
 
+function getUniqueSourceLinks(syncInput = false) {
+  const links = extractLinks(sourceLinks.value);
+  const uniqueLinks = uniqueInOrder(links);
+
+  if (syncInput && uniqueLinks.length !== links.length) {
+    sourceLinks.value = uniqueLinks.join("\n");
+  }
+
+  return {
+    links: uniqueLinks,
+    removedCount: links.length - uniqueLinks.length,
+  };
+}
+
+function updateLinkCount(count = getUniqueSourceLinks().links.length) {
+  linkCount.textContent = `${count}条链接`;
+}
+
 function isTuxunUrl(url) {
   return url.origin === TUXUN_ORIGIN;
 }
 
-function parseTuxunLink(rawLink) {
-  try {
-    const url = new URL(rawLink);
-
-    if (!isTuxunUrl(url)) {
-      return null;
-    }
-
-    const path = url.pathname.replace(/\/+$/g, "");
-
-    if (path === "/solo") {
-      return { type: "solo", gameId: url.searchParams.get("gameId") };
-    }
-
-    if (path.startsWith("/solo/")) {
-      return { type: "solo", gameId: decodeURIComponent(path.slice("/solo/".length)) };
-    }
-
-    if (path === "/replay" || path === "/replayplayer" || path === "/replay-pano") {
-      return {
-        type: "round",
-        gameId: url.searchParams.get("gameId"),
-        round: url.searchParams.get("round") || url.searchParams.get("chooseRound"),
-        userId: url.searchParams.get("userId") || url.searchParams.get("chooseUser"),
-      };
-    }
-  } catch (error) {
-    return null;
-  }
-
-  return null;
+function isValidGameId(gameId) {
+  return Boolean(gameId && UUID_REGEX.test(gameId));
 }
 
-function buildReplayPanoLink(item, userId) {
+function classifyLink(rawLink) {
+  let url;
+
+  try {
+    url = new URL(rawLink);
+  } catch (error) {
+    return { valid: false, reason: "链接无效" };
+  }
+
+  if (!isTuxunUrl(url)) {
+    return { valid: false, reason: "域名错误" };
+  }
+
+  const path = url.pathname.replace(/\/+$/g, "");
+
+  if (path === "/solo" || path.startsWith("/solo/")) {
+    return { valid: false, reason: "复盘链接" };
+  }
+
+  if (path === "/replay" || path === "/replayplayer" || path === "/replay-pano") {
+    const gameId = url.searchParams.get("gameId");
+    const round = url.searchParams.get("round") || url.searchParams.get("chooseRound");
+
+    if (!gameId) {
+      return { valid: false, reason: "缺少参数gameId" };
+    }
+
+    if (!isValidGameId(gameId)) {
+      return { valid: false, reason: "gameId非法" };
+    }
+
+    if (!round) {
+      return { valid: false, reason: "缺少参数round" };
+    }
+
+    return {
+      valid: true,
+      item: {
+        type: "round",
+        gameId,
+        round,
+        userId: url.searchParams.get("userId") || url.searchParams.get("chooseUser"),
+      },
+    };
+  }
+
+  return { valid: false, reason: "路径错误" };
+}
+
+function buildReplayPanoLink(item) {
   const params = new URLSearchParams();
   params.set("gameId", item.gameId);
 
@@ -81,16 +125,22 @@ function buildReplayPanoLink(item, userId) {
     params.set("round", item.round);
   }
 
-  params.set("userId", userId);
-
   return `${TUXUN_ORIGIN}/replay-pano?${params.toString()}`;
 }
 
-function buildReplayLink(item) {
+function buildReplayPlayerLink(item, userId) {
   const params = new URLSearchParams();
   params.set("gameId", item.gameId);
 
-  return `${TUXUN_ORIGIN}/replay?${params.toString()}`;
+  if (item.round) {
+    params.set("round", item.round);
+  }
+
+  if (userId) {
+    params.set("userId", userId);
+  }
+
+  return `${TUXUN_ORIGIN}/replayplayer?${params.toString()}`;
 }
 
 function canOpenAsLink(value) {
@@ -114,8 +164,8 @@ function getDisplayLinkText(link) {
 
       const displayText = `${url.pathname.replace(/^\//, "")}${url.search}`;
 
-      if (url.pathname === "/replay-pano") {
-        return displayText.replace(/^replay-pano\?gameId=/, "");
+      if (url.pathname === "/replay-pano" || url.pathname === "/replayplayer") {
+        return displayText.replace(/^replay(?:-pano|player)\?gameId=/, "");
       }
 
       return displayText;
@@ -161,31 +211,115 @@ function renderLinkList(container, links) {
   });
 }
 
+function renderInvalidLinkList(container, entries) {
+  container.textContent = "";
+
+  if (entries.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "empty-state";
+    empty.textContent = "暂无链接";
+    container.appendChild(empty);
+    return;
+  }
+
+  entries.forEach(entry => {
+    const row = document.createElement("div");
+    row.className = "invalid-item";
+
+    const reason = document.createElement("span");
+    reason.className = "invalid-reason";
+    reason.textContent = entry.reason;
+    row.appendChild(reason);
+
+    if (canOpenAsLink(entry.link)) {
+      const anchor = document.createElement("a");
+      anchor.href = entry.link;
+      anchor.textContent = getDisplayLinkText(entry.link);
+      anchor.title = entry.link;
+      anchor.target = "_blank";
+      anchor.rel = "noopener noreferrer";
+      anchor.addEventListener("click", event => {
+        event.preventDefault();
+        window.open(entry.link, "_blank", "noopener,noreferrer");
+      });
+      row.appendChild(anchor);
+    } else {
+      const plainLink = document.createElement("span");
+      plainLink.className = "plain-link";
+      plainLink.textContent = entry.link;
+      row.appendChild(plainLink);
+    }
+
+    container.appendChild(row);
+  });
+}
+
 function setOutputLinks(container, links) {
   outputLinks[container.id] = uniqueInOrder(links);
   renderLinkList(container, outputLinks[container.id]);
 }
 
-function getOutputText(id) {
-  return outputLinks[id].join("\n");
+function setInvalidOutput(entries) {
+  const seen = new Set();
+  invalidEntries = entries.filter(entry => {
+    const key = `${entry.link}\0${entry.reason}`;
+    if (seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
+  renderInvalidLinkList(invalidOutput, invalidEntries);
 }
 
-function isValidParsedLink(item) {
-  if (!item || !item.gameId) {
-    return false;
+function getOutputText(id) {
+  if (id === "invalid-output") {
+    return invalidEntries.map(entry => entry.link).join("\n");
   }
 
-  if (item.type === "round") {
-    return Boolean(item.round);
-  }
-
-  return item.type === "solo";
+  return outputLinks[id].join("\n");
 }
 
 function setStatus(message, type = "info") {
   statusMessage.textContent = message;
   statusMessage.classList.toggle("is-error", type === "error");
   statusMessage.classList.toggle("is-success", type === "success");
+}
+
+function resolveRoundUserId(roundItems) {
+  const linkUserIds = uniqueInOrder(roundItems.map(item => item.userId).filter(Boolean));
+  const userIds = uniqueInOrder([confirmedUserId, ...linkUserIds].filter(Boolean));
+
+  if (userIds.length > 1) {
+    return { userId: null, conflict: true };
+  }
+
+  if (userIds.length === 1) {
+    return { userId: userIds[0], conflict: false };
+  }
+
+  return { userId: null, conflict: false };
+}
+
+function buildRoundOutputLinks(items, format, userId) {
+  if (format === "replayplayer") {
+    return items.map(item => buildReplayPlayerLink(item, userId));
+  }
+
+  return items.map(item => buildReplayPanoLink(item));
+}
+
+function updateRoundPanelHeading() {
+  roundTitle.textContent = `${roundOutputFormat} 轮次`;
+  const hasRoundLinks = outputLinks["round-output"].length > 0;
+  toggleRoundFormatBtn.hidden = !hasRoundLinks;
+  toggleRoundFormatBtn.textContent = roundOutputFormat === "replay-pano" ? "replayplayer" : "replay-pano";
+}
+
+function buildConvertCompleteMessage(roundCount, removedCount, invalidCount) {
+  const invalidHint = invalidCount > 0 ? "，请检查" : "";
+  return `转换完成：轮次${roundCount}条，去重${removedCount}条；非法${invalidCount}条${invalidHint}`;
 }
 
 function confirmPresetUserId(showFeedback = true) {
@@ -205,42 +339,61 @@ function confirmPresetUserId(showFeedback = true) {
 function convertLinks() {
   confirmPresetUserId(false);
 
-  const rawLinks = extractLinks(sourceLinks.value);
-  const parsedEntries = rawLinks.map(rawLink => ({ rawLink, item: parseTuxunLink(rawLink) }));
-  const invalidLinks = parsedEntries.filter(entry => !isValidParsedLink(entry.item)).map(entry => entry.rawLink);
-  const parsedLinks = parsedEntries.filter(entry => isValidParsedLink(entry.item)).map(entry => entry.item);
-  const roundItems = parsedLinks.filter(item => item.type === "round" && item.gameId);
-  const reviewItems = parsedLinks.filter(item => item.type === "solo" && item.gameId);
-  const linkUserIds = uniqueInOrder(roundItems.map(item => item.userId).filter(userId => Boolean(userId)));
-  const userIds = uniqueInOrder([confirmedUserId, ...linkUserIds].filter(Boolean));
+  const { links: rawLinks, removedCount } = getUniqueSourceLinks(true);
+  const classified = rawLinks.map(rawLink => ({ rawLink, ...classifyLink(rawLink) }));
+  const invalid = classified
+    .filter(entry => !entry.valid)
+    .map(entry => ({ link: entry.rawLink, reason: entry.reason }));
+  const roundItems = classified.filter(entry => entry.valid).map(entry => entry.item);
 
-  linkCount.textContent = `${rawLinks.length}条链接`;
+  updateLinkCount(rawLinks.length);
+  lastRoundItems = roundItems;
+  roundOutputFormat = "replay-pano";
   setOutputLinks(roundOutput, []);
-  setOutputLinks(reviewOutput, reviewItems.map(buildReplayLink));
-  setOutputLinks(invalidOutput, invalidLinks);
-
-  if (roundItems.length > 0 && userIds.length > 1) {
-    setStatus("userId冲突！请检查。", "error");
-    return;
-  }
-
-  if (roundItems.length > 0 && userIds.length === 0) {
-    setStatus("未检测到userId！请检查。", "error");
-    return;
-  }
+  setInvalidOutput(invalid);
 
   if (roundItems.length > 0) {
-    setOutputLinks(
-      roundOutput,
-      roundItems.map(item => buildReplayPanoLink(item, userIds[0])),
-    );
+    setOutputLinks(roundOutput, buildRoundOutputLinks(roundItems, "replay-pano"));
   }
 
+  updateRoundPanelHeading();
+
   setStatus(
-    `转换完成：轮次${outputLinks["round-output"].length}条，复盘${outputLinks["review-output"].length
-    }条，非法${outputLinks["invalid-output"].length}条。`,
+    buildConvertCompleteMessage(
+      outputLinks["round-output"].length,
+      removedCount,
+      invalidEntries.length,
+    ),
     "success",
   );
+}
+
+function toggleRoundFormat() {
+  if (lastRoundItems.length === 0) {
+    return;
+  }
+
+  if (roundOutputFormat === "replay-pano") {
+    const { userId, conflict } = resolveRoundUserId(lastRoundItems);
+
+    if (conflict) {
+      setStatus("userId冲突！请检查。", "error");
+      return;
+    }
+
+    if (!userId) {
+      setStatus("未检测到userId！请检查。", "error");
+      return;
+    }
+
+    roundOutputFormat = "replayplayer";
+    setOutputLinks(roundOutput, buildRoundOutputLinks(lastRoundItems, "replayplayer", userId));
+  } else {
+    roundOutputFormat = "replay-pano";
+    setOutputLinks(roundOutput, buildRoundOutputLinks(lastRoundItems, "replay-pano"));
+  }
+
+  updateRoundPanelHeading();
 }
 
 async function copyText(text) {
@@ -264,7 +417,7 @@ async function copyText(text) {
 }
 
 sourceLinks.addEventListener("input", () => {
-  linkCount.textContent = `${extractLinks(sourceLinks.value).length}条链接`;
+  updateLinkCount();
 });
 
 confirmUserIdBtn.addEventListener("click", () => {
@@ -272,15 +425,18 @@ confirmUserIdBtn.addEventListener("click", () => {
 });
 
 convertBtn.addEventListener("click", convertLinks);
+toggleRoundFormatBtn.addEventListener("click", toggleRoundFormat);
 
 function clearAll() {
   sourceLinks.value = "";
   presetUserIdInput.value = "";
   confirmedUserId = "";
+  lastRoundItems = [];
+  roundOutputFormat = "replay-pano";
   setOutputLinks(roundOutput, []);
-  setOutputLinks(reviewOutput, []);
-  setOutputLinks(invalidOutput, []);
-  linkCount.textContent = "0条链接";
+  setInvalidOutput([]);
+  updateRoundPanelHeading();
+  updateLinkCount(0);
   setStatus("");
 }
 
@@ -312,5 +468,5 @@ document.querySelectorAll("[data-copy-target]").forEach(button => {
 });
 
 setOutputLinks(roundOutput, []);
-setOutputLinks(reviewOutput, []);
-setOutputLinks(invalidOutput, []);
+setInvalidOutput([]);
+updateRoundPanelHeading();
