@@ -70,6 +70,14 @@ textarea {
   line-height: 1.45;
 }
 
+.header-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .workspace {
   display: grid;
   min-width: 0;
@@ -375,6 +383,21 @@ button:active {
   line-height: 1.6;
 }
 
+.help-panel {
+  width: min(520px, 100%);
+}
+
+.help-steps {
+  margin: 14px 0;
+  padding-left: 22px;
+  color: var(--text);
+  line-height: 1.65;
+}
+
+.help-steps li + li {
+  margin-top: 8px;
+}
+
 .confirm-actions {
   display: flex;
   justify-content: flex-end;
@@ -409,6 +432,11 @@ button:active {
 
   .page-header h1 {
     font-size: 20px;
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
+    gap: 6px;
   }
 
   .page-header p {

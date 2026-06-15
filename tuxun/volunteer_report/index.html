@@ -12,7 +12,10 @@
   <main class="app-shell">
     <header class="page-header">
       <h1>图寻复盘链接转换工具</h1>
-      <button id="clear-btn" class="danger-button" type="button">清空</button>
+      <div class="header-actions">
+        <button id="help-btn" class="ghost-button" type="button">使用说明</button>
+        <button id="clear-btn" class="danger-button" type="button">清空</button>
+      </div>
     </header>
 
     <section class="workspace" aria-label="链接转换工作区">
@@ -68,6 +71,28 @@ https://tuxun.fun/solo/1920613e-60fc-469d-98f2-0c9f0d24213b" spellcheck="false">
       <div class="confirm-actions">
         <button id="cancel-clear-btn" class="ghost-button" type="button">取消</button>
         <button id="confirm-clear-btn" class="danger-button" type="button">确认清空</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="help-dialog" class="confirm-overlay" hidden>
+    <div class="confirm-panel help-panel" role="dialog" aria-modal="true" aria-labelledby="help-title">
+      <h2 id="help-title">使用说明</h2>
+      <p>本工具用于把图寻各类链接转换成举报处理所需的标准格式。</p>
+      <p>接受的格式包括：replay / replayplayer / replay-pano。
+      <ol class="help-steps">
+        <li>可以预设userId，填入上方输入框，点击“确认”。链接中包含userId时选填。</li>
+        <li>把可疑轮次的链接粘贴到“原始链接”框里，每行一个。</li>
+        <li>点击“转换”，右边会出现若干轮次链接。</li>
+        <li>点击“复制”可以复制结果。</li>
+        <li>右侧的链接可以点击，在新标签页中查看。</li>
+        <li>如果链接非法，请在“非法”栏中查看，点击链接自行处理。</li>
+        <li>点“replayplayer”或“replay-pano”可以切换轮次链接格式。</li>
+        <li>点“清空”会删除输入内容和转换结果。</li>
+      </ol>
+      <p>你可以随时点击按钮查看本说明。</p>
+      <div class="confirm-actions">
+        <button id="close-help-btn" type="button">好的</button>
       </div>
     </div>
   </div>

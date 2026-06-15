@@ -6,6 +6,9 @@ const roundTitle = document.getElementById("round-title");
 const invalidOutput = document.getElementById("invalid-output");
 const convertBtn = document.getElementById("convert-btn");
 const toggleRoundFormatBtn = document.getElementById("toggle-round-format-btn");
+const helpBtn = document.getElementById("help-btn");
+const helpDialog = document.getElementById("help-dialog");
+const closeHelpBtn = document.getElementById("close-help-btn");
 const clearBtn = document.getElementById("clear-btn");
 const clearConfirm = document.getElementById("clear-confirm");
 const cancelClearBtn = document.getElementById("cancel-clear-btn");
@@ -487,6 +490,22 @@ confirmUserIdBtn.addEventListener("click", () => {
 
 convertBtn.addEventListener("click", convertLinks);
 toggleRoundFormatBtn.addEventListener("click", toggleRoundFormat);
+
+function closeHelpDialog() {
+  helpDialog.hidden = true;
+}
+
+helpBtn.addEventListener("click", () => {
+  helpDialog.hidden = false;
+});
+
+closeHelpBtn.addEventListener("click", closeHelpDialog);
+
+helpDialog.addEventListener("click", event => {
+  if (event.target === helpDialog) {
+    closeHelpDialog();
+  }
+});
 
 function clearAll() {
   sourceLinks.value = "";
