@@ -13,16 +13,12 @@
     <header class="page-header">
       <h1>图寻复盘链接转换工具</h1>
       <div class="header-actions">
-        <div class="view-tabs" role="tablist" aria-label="界面切换">
-          <button id="converter-view-btn" class="view-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="converter-view">链接转换</button>
-          <button id="review-view-btn" class="view-tab" type="button" role="tab" aria-selected="false" aria-controls="review-view">复盘处理</button>
-        </div>
         <button id="help-btn" class="ghost-button" type="button">使用说明</button>
         <button id="clear-btn" class="danger-button" type="button">清空</button>
       </div>
     </header>
 
-    <section id="converter-view" class="view-panel workspace" aria-label="链接转换工作区" role="tabpanel" aria-labelledby="converter-view-btn">
+    <section class="workspace" aria-label="链接转换工作区">
       <div class="input-panel">
         <div class="preset-user">
           <div class="preset-user-controls">
@@ -46,36 +42,22 @@ https://tuxun.fun/solo/1920613e-60fc-469d-98f2-0c9f0d24213b" spellcheck="false">
       </div>
 
       <div class="output-grid">
-        <section class="output-panel" aria-labelledby="round-title">
+        <section class="output-panel report-panel" aria-labelledby="report-title">
           <div class="panel-heading">
-            <h2 id="round-title">replay-pano 轮次</h2>
+            <h2 id="report-title">举报原因</h2>
             <div class="panel-actions">
               <button id="toggle-round-format-btn" class="text-button" type="button" hidden>replayplayer</button>
-              <button class="text-button" data-copy-target="round-output" type="button">复制</button>
+              <span id="report-row-count" class="report-row-count">0条链接</span>
+              <button id="copy-report-btn" class="text-button" type="button">复制</button>
+              <button id="export-report-btn" class="text-button" type="button">导出</button>
             </div>
           </div>
-          <div id="round-output" class="link-list" aria-live="polite"></div>
-        </section>
-
-        <section class="output-panel" aria-labelledby="invalid-title">
-          <div class="panel-heading">
-            <h2 id="invalid-title">非法</h2>
-            <button class="text-button" data-copy-target="invalid-output" type="button">复制</button>
-          </div>
-          <div id="invalid-output" class="link-list" aria-live="polite"></div>
-        </section>
-      </div>
-    </section>
-
-    <section id="review-view" class="view-panel review-workspace" aria-label="复盘举报处理界面" role="tabpanel" aria-labelledby="review-view-btn" hidden>
-      <section class="review-table-panel" aria-label="复盘链接与举报原因">
-        <div class="review-table-content">
-          <div class="review-table-wrap">
-            <table id="review-table" class="review-table">
+          <div class="report-table-wrap">
+            <table id="report-table" class="report-table">
               <thead>
                 <tr>
                   <th class="report-delete-cell" scope="col"></th>
-                  <th scope="col">轮次</th>
+                  <th id="report-link-title" scope="col">replay-pano 轮次</th>
                   <th scope="col">原因</th>
                 </tr>
               </thead>
@@ -86,13 +68,16 @@ https://tuxun.fun/solo/1920613e-60fc-469d-98f2-0c9f0d24213b" spellcheck="false">
               </tbody>
             </table>
           </div>
-          <div class="review-actions">
-            <span id="review-row-count" class="review-row-count">0条链接</span>
-            <button id="copy-report-btn" class="text-button" type="button">复制</button>
-            <button id="export-report-btn" class="text-button" type="button">导出</button>
+        </section>
+
+        <section class="output-panel" aria-labelledby="invalid-title">
+          <div class="panel-heading">
+            <h2 id="invalid-title">非法</h2>
+            <button class="text-button" data-copy-target="invalid-output" type="button">复制</button>
           </div>
-        </div>
-      </section>
+          <div id="invalid-output" class="link-list" aria-live="polite"></div>
+        </section>
+      </div>
     </section>
   </main>
 
@@ -115,9 +100,9 @@ https://tuxun.fun/solo/1920613e-60fc-469d-98f2-0c9f0d24213b" spellcheck="false">
       <ol class="help-steps">
         <li>可以预设userId，填入上方输入框，点击“确认”。链接中包含userId时选填。</li>
         <li>把可疑轮次的链接粘贴到“原始链接”框里，每行一个。</li>
-        <li>点击“转换”，右边会出现若干轮次链接。</li>
-        <li>点击“复制”可以复制结果。</li>
-        <li>右侧的链接可以点击，在新标签页中查看。</li>
+        <li>点击“转换”，右边会出现轮次链接和举报原因表格。</li>
+        <li>轮次链接可以点击，在新标签页中查看。</li>
+        <li>在“举报原因”表格里填写原因，点击“复制”或“导出”可以拿到结果。</li>
         <li>如果链接非法，请在“非法”栏中查看，点击链接自行处理。</li>
         <li>点“replayplayer”或“replay-pano”可以切换轮次链接格式。</li>
         <li>点“清空”会删除输入内容和转换结果。</li>

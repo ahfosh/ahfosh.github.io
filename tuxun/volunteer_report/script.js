@@ -1,16 +1,11 @@
 const sourceLinks = document.getElementById("source-links");
 const presetUserIdInput = document.getElementById("preset-user-id");
 const confirmUserIdBtn = document.getElementById("confirm-user-id-btn");
-const roundOutput = document.getElementById("round-output");
-const roundTitle = document.getElementById("round-title");
 const invalidOutput = document.getElementById("invalid-output");
 const convertBtn = document.getElementById("convert-btn");
-const converterView = document.getElementById("converter-view");
-const reviewView = document.getElementById("review-view");
-const converterViewBtn = document.getElementById("converter-view-btn");
-const reviewViewBtn = document.getElementById("review-view-btn");
+const reportLinkTitle = document.getElementById("report-link-title");
 const reportTableBody = document.getElementById("report-table-body");
-const reviewRowCount = document.getElementById("review-row-count");
+const reportRowCount = document.getElementById("report-row-count");
 const copyReportBtn = document.getElementById("copy-report-btn");
 const exportReportBtn = document.getElementById("export-report-btn");
 const toggleRoundFormatBtn = document.getElementById("toggle-round-format-btn");
@@ -27,16 +22,14 @@ const linkCount = document.getElementById("link-count");
 const TUXUN_ORIGIN = "https://tuxun.fun";
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const STORAGE_KEY = "tuxun_volunteer_report";
-const REPORT_LAYOUT_VERSION = 3;
+const REPORT_LAYOUT_VERSION = 5;
 
 let confirmedUserId = "";
 let roundOutputFormat = "replay-pano";
 let lastRoundItems = [];
-const outputLinks = { "round-output": [] };
 let invalidEntries = [];
 let reportReasons = {};
 let deletedReportLinks = [];
-let activeView = "converter";
 let saveStateTimer = null;
 
 function getStateSnapshot() {
@@ -46,12 +39,10 @@ function getStateSnapshot() {
     confirmedUserId,
     roundOutputFormat,
     lastRoundItems,
-    roundOutputLinks: outputLinks["round-output"],
     invalidEntries,
     reportReasons,
     reportLayoutVersion: REPORT_LAYOUT_VERSION,
     deletedReportLinks,
-    activeView,
   };
 }
 
@@ -68,6 +59,13 @@ function scheduleSaveState() {
   saveStateTimer = setTimeout(saveState, 300);
 }
 
+function resizeSourceLinks() {
+  sourceLinks.style.height = "auto";
+  const style = window.getComputedStyle(sourceLinks);
+  const borderHeight = parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
+  sourceLinks.style.height = `${sourceLinks.scrollHeight + borderHeight}px`;
+}
+
 function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -77,6 +75,7 @@ function loadState() {
 
     const state = JSON.parse(raw);
     sourceLinks.value = typeof state.sourceLinks === "string" ? state.sourceLinks : "";
+    resizeSourceLinks();
     presetUserIdInput.value = typeof state.presetUserId === "string" ? state.presetUserId : "";
     confirmedUserId = typeof state.confirmedUserId === "string" ? state.confirmedUserId : "";
     roundOutputFormat = state.roundOutputFormat === "replayplayer" ? "replayplayer" : "replay-pano";
@@ -85,16 +84,10 @@ function loadState() {
     deletedReportLinks = state.reportLayoutVersion === REPORT_LAYOUT_VERSION && Array.isArray(state.deletedReportLinks)
       ? state.deletedReportLinks
       : [];
-    activeView = state.activeView === "review" ? "review" : "converter";
-    setOutputLinks(
-      roundOutput,
-      Array.isArray(state.roundOutputLinks) ? state.roundOutputLinks : [],
-    );
     setInvalidOutput(Array.isArray(state.invalidEntries) ? state.invalidEntries : []);
     updateLinkCount();
-    updateRoundPanelHeading();
-    syncReportWorkspace();
-    setActiveView(activeView, false);
+    updateReportPanelHeading();
+    renderReportRows();
     return true;
   } catch (error) {
     return false;
@@ -127,6 +120,7 @@ function getUniqueSourceLinks(syncInput = false) {
 
   if (syncInput && uniqueLinks.length !== links.length) {
     sourceLinks.value = uniqueLinks.join("\n");
+    resizeSourceLinks();
   }
 
   return {
@@ -256,40 +250,6 @@ function getDisplayLinkText(link) {
   return link.startsWith(tuxunPrefix) ? link.slice(tuxunPrefix.length) : link;
 }
 
-function renderLinkList(container, links) {
-  container.textContent = "";
-
-  if (links.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "empty-state";
-    empty.textContent = "暂无链接";
-    container.appendChild(empty);
-    return;
-  }
-
-  links.forEach(link => {
-    if (canOpenAsLink(link)) {
-      const anchor = document.createElement("a");
-      anchor.href = link;
-      anchor.textContent = getDisplayLinkText(link);
-      anchor.title = link;
-      anchor.target = "_blank";
-      anchor.rel = "noopener noreferrer";
-      anchor.addEventListener("click", event => {
-        event.preventDefault();
-        window.open(link, "_blank", "noopener,noreferrer");
-      });
-      container.appendChild(anchor);
-      return;
-    }
-
-    const plainLink = document.createElement("span");
-    plainLink.className = "plain-link";
-    plainLink.textContent = link;
-    container.appendChild(plainLink);
-  });
-}
-
 function renderInvalidLinkList(container, entries) {
   container.textContent = "";
 
@@ -333,11 +293,6 @@ function renderInvalidLinkList(container, entries) {
   });
 }
 
-function setOutputLinks(container, links) {
-  outputLinks[container.id] = uniqueInOrder(links);
-  renderLinkList(container, outputLinks[container.id]);
-}
-
 function setInvalidOutput(entries) {
   const seen = new Set();
   invalidEntries = entries.filter(entry => {
@@ -357,7 +312,7 @@ function getOutputText(id) {
     return invalidEntries.map(entry => entry.link).join("\n");
   }
 
-  return outputLinks[id].join("\n");
+  return "";
 }
 
 function setStatus(message, type = "info") {
@@ -381,57 +336,38 @@ function resolveRoundUserId(roundItems) {
   return { userId: null, conflict: false };
 }
 
-function buildRoundOutputLinks(items, format, userId) {
-  if (format === "replayplayer") {
-    return items.map(item => buildReplayPlayerLink(item, userId));
-  }
-
-  return items.map(item => buildReplayPanoLink(item));
-}
-
-function setActiveView(view, shouldSave = true) {
-  activeView = view === "review" ? "review" : "converter";
-  const isReviewView = activeView === "review";
-
-  converterView.hidden = isReviewView;
-  reviewView.hidden = !isReviewView;
-  document.body.classList.toggle("is-review-mode", isReviewView);
-  converterViewBtn.classList.toggle("is-active", !isReviewView);
-  reviewViewBtn.classList.toggle("is-active", isReviewView);
-  converterViewBtn.setAttribute("aria-selected", String(!isReviewView));
-  reviewViewBtn.setAttribute("aria-selected", String(isReviewView));
-
-  if (shouldSave) {
-    saveState();
-  }
-}
-
 function getReportRows() {
   const seen = new Set();
   const deleted = new Set(deletedReportLinks);
+  const resolved = resolveRoundUserId(lastRoundItems);
+  const sharedUserId = resolved.conflict ? "" : resolved.userId || "";
 
   return lastRoundItems
     .map(item => {
-      const reviewLink = buildReplayPanoLink(item);
+      const reportKey = buildReplayPanoLink(item);
+      const reportLink = roundOutputFormat === "replayplayer"
+        ? buildReplayPlayerLink(item, item.userId || sharedUserId)
+        : reportKey;
 
       return {
         gameId: item.gameId,
         round: item.round,
-        reviewLink,
-        displayText: getDisplayLinkText(reviewLink),
-        reason: reportReasons[reviewLink] || "",
+        reportKey,
+        reportLink,
+        displayText: getDisplayLinkText(reportLink),
+        reason: reportReasons[reportKey] || "",
       };
     })
     .filter(row => {
-      if (deleted.has(row.reviewLink)) {
+      if (deleted.has(row.reportKey)) {
         return false;
       }
 
-      if (seen.has(row.reviewLink)) {
+      if (seen.has(row.reportKey)) {
         return false;
       }
 
-      seen.add(row.reviewLink);
+      seen.add(row.reportKey);
       return true;
     });
 }
@@ -440,8 +376,8 @@ function renderReportRows() {
   const rows = getReportRows();
   reportTableBody.textContent = "";
 
-  if (reviewRowCount) {
-    reviewRowCount.textContent = `${rows.length}条链接`;
+  if (reportRowCount) {
+    reportRowCount.textContent = `${rows.length}条链接`;
   }
 
   if (rows.length === 0) {
@@ -468,7 +404,7 @@ function renderReportRows() {
     deleteButton.textContent = "×";
     deleteButton.setAttribute("aria-label", `删除${row.displayText}`);
     deleteButton.addEventListener("click", () => {
-      deleteReportRow(row.reviewLink);
+      deleteReportRow(row.reportKey);
     });
     deleteCell.appendChild(deleteButton);
 
@@ -476,8 +412,8 @@ function renderReportRows() {
     linkCell.className = "report-link-cell";
     const link = document.createElement("a");
     link.className = "report-link";
-    link.href = row.reviewLink;
-    link.title = row.reviewLink;
+    link.href = row.reportLink;
+    link.title = row.reportLink;
     link.textContent = row.displayText;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
@@ -492,9 +428,9 @@ function renderReportRows() {
     reasonInput.value = row.reason;
     reasonInput.addEventListener("input", () => {
       if (reasonInput.value) {
-        reportReasons[row.reviewLink] = reasonInput.value;
+        reportReasons[row.reportKey] = reasonInput.value;
       } else {
-        delete reportReasons[row.reviewLink];
+        delete reportReasons[row.reportKey];
       }
 
       scheduleSaveState();
@@ -508,13 +444,9 @@ function renderReportRows() {
   });
 }
 
-function syncReportWorkspace() {
-  renderReportRows();
-}
-
-function deleteReportRow(reviewLink) {
-  if (!deletedReportLinks.includes(reviewLink)) {
-    deletedReportLinks.push(reviewLink);
+function deleteReportRow(reportKey) {
+  if (!deletedReportLinks.includes(reportKey)) {
+    deletedReportLinks.push(reportKey);
   }
 
   renderReportRows();
@@ -523,7 +455,7 @@ function deleteReportRow(reviewLink) {
 
 function getReportExportText() {
   return getReportRows()
-    .map(row => `${row.reviewLink}，${reportReasons[row.reviewLink] || ""}`)
+    .map(row => `${row.reportLink}，${reportReasons[row.reportKey] || ""}`)
     .join("\n");
 }
 
@@ -547,9 +479,9 @@ function exportReportText() {
   setStatus("已导出txt。", "success");
 }
 
-function updateRoundPanelHeading() {
-  roundTitle.textContent = `${roundOutputFormat} 轮次`;
-  const hasRoundLinks = outputLinks["round-output"].length > 0;
+function updateReportPanelHeading() {
+  reportLinkTitle.textContent = `${roundOutputFormat} 轮次`;
+  const hasRoundLinks = lastRoundItems.length > 0;
   toggleRoundFormatBtn.hidden = !hasRoundLinks;
   toggleRoundFormatBtn.textContent = roundOutputFormat === "replay-pano" ? "replayplayer" : "replay-pano";
 }
@@ -561,7 +493,7 @@ function buildConvertCompleteMessage(roundCount, removedCount, invalidCount) {
 
 function confirmPresetUserId(showFeedback = true) {
   confirmedUserId = presetUserIdInput.value.trim();
-  syncReportWorkspace();
+  renderReportRows();
 
   if (!showFeedback) {
     return;
@@ -589,19 +521,14 @@ function convertLinks() {
   updateLinkCount(rawLinks.length);
   lastRoundItems = roundItems;
   roundOutputFormat = "replay-pano";
-  setOutputLinks(roundOutput, []);
   setInvalidOutput(invalid);
 
-  if (roundItems.length > 0) {
-    setOutputLinks(roundOutput, buildRoundOutputLinks(roundItems, "replay-pano"));
-  }
-
-  updateRoundPanelHeading();
-  syncReportWorkspace();
+  updateReportPanelHeading();
+  renderReportRows();
 
   setStatus(
     buildConvertCompleteMessage(
-      outputLinks["round-output"].length,
+      getReportRows().length,
       removedCount,
       invalidEntries.length,
     ),
@@ -630,13 +557,12 @@ function toggleRoundFormat() {
     }
 
     roundOutputFormat = "replayplayer";
-    setOutputLinks(roundOutput, buildRoundOutputLinks(lastRoundItems, "replayplayer", userId));
   } else {
     roundOutputFormat = "replay-pano";
-    setOutputLinks(roundOutput, buildRoundOutputLinks(lastRoundItems, "replay-pano"));
   }
 
-  updateRoundPanelHeading();
+  updateReportPanelHeading();
+  renderReportRows();
   saveState();
 }
 
@@ -661,6 +587,7 @@ async function copyText(text) {
 }
 
 sourceLinks.addEventListener("input", () => {
+  resizeSourceLinks();
   updateLinkCount();
   scheduleSaveState();
 });
@@ -673,13 +600,6 @@ confirmUserIdBtn.addEventListener("click", () => {
 
 convertBtn.addEventListener("click", convertLinks);
 toggleRoundFormatBtn.addEventListener("click", toggleRoundFormat);
-converterViewBtn.addEventListener("click", () => {
-  setActiveView("converter");
-});
-
-reviewViewBtn.addEventListener("click", () => {
-  setActiveView("review");
-});
 
 copyReportBtn.addEventListener("click", () => {
   copyText(getReportExportText());
@@ -705,15 +625,16 @@ helpDialog.addEventListener("click", event => {
 
 function clearAll() {
   sourceLinks.value = "";
+  resizeSourceLinks();
   presetUserIdInput.value = "";
   confirmedUserId = "";
   lastRoundItems = [];
   roundOutputFormat = "replay-pano";
   reportReasons = {};
-  setOutputLinks(roundOutput, []);
+  deletedReportLinks = [];
   setInvalidOutput([]);
-  updateRoundPanelHeading();
-  syncReportWorkspace();
+  updateReportPanelHeading();
+  renderReportRows();
   updateLinkCount(0);
   setStatus("");
   saveState();
@@ -740,6 +661,8 @@ clearConfirm.addEventListener("click", event => {
   }
 });
 
+window.addEventListener("resize", resizeSourceLinks);
+
 document.querySelectorAll("[data-copy-target]").forEach(button => {
   button.addEventListener("click", () => {
     copyText(getOutputText(button.dataset.copyTarget));
@@ -747,9 +670,9 @@ document.querySelectorAll("[data-copy-target]").forEach(button => {
 });
 
 if (!loadState()) {
-  setOutputLinks(roundOutput, []);
   setInvalidOutput([]);
-  updateRoundPanelHeading();
-  syncReportWorkspace();
-  setActiveView("converter", false);
+  updateReportPanelHeading();
+  renderReportRows();
 }
+
+resizeSourceLinks();
