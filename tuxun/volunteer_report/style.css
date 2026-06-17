@@ -34,24 +34,11 @@
   --font-xs: 0.75rem;
   --font-sm: 0.8125rem;
   --font-md: 0.875rem;
-  --font-table: 0.9375rem;
   --font-lg: 1rem;
-  --font-icon: 1.125rem;
   --font-xl: 1.25rem;
   --control-height: 2.5rem;
   --control-height-sm: 2rem;
-  --mobile-control-height: 36px;
-  --page-inline-offset: 2rem;
-  --mobile-page-inline-offset: 1rem;
-  --panel-heading-height: 30px;
-  --input-column-width: 520px;
-  --dialog-width: 360px;
-  --help-panel-width: 520px;
-  --reason-column-min-width: 300px;
   --delete-button-size: 28px;
-  --delete-column-width: 38px;
-  --report-table-min-width: 720px;
-  --report-table-mobile-min-width: 560px;
 }
 
 * {
@@ -73,7 +60,7 @@ textarea {
 }
 
 .app-shell {
-  width: min(1440px, calc(100% - var(--page-inline-offset)));
+  width: min(1440px, calc(100% - 2rem));
   min-height: 100dvh;
   margin: 0 auto;
   padding: var(--space-5xl) 0;
@@ -104,7 +91,7 @@ textarea {
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, var(--input-column-width)) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 520px) minmax(0, 1fr);
   align-items: start;
   gap: var(--space-2xl);
 }
@@ -112,6 +99,11 @@ textarea {
 .input-panel,
 .output-panel {
   min-width: 0;
+}
+
+.input-panel,
+.output-panel,
+.confirm-panel {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -142,7 +134,7 @@ textarea {
 
 .panel-heading {
   display: flex;
-  min-height: var(--panel-heading-height);
+  min-height: 30px;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-lg);
@@ -253,12 +245,12 @@ textarea:focus,
   color: var(--text);
   font-size: var(--font-sm);
   line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .link-list a {
   display: block;
   text-decoration: none;
-  overflow-wrap: anywhere;
 }
 
 .link-list a:hover {
@@ -278,7 +270,6 @@ textarea:focus,
 .empty-state {
   margin: 0;
   color: var(--muted);
-  overflow-wrap: anywhere;
 }
 
 .convert-button {
@@ -371,12 +362,8 @@ button:active {
 }
 
 .confirm-panel {
-  width: min(var(--dialog-width), 100%);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  width: min(360px, 100%);
   padding: var(--space-4xl);
-  background: var(--surface);
-  box-shadow: var(--shadow);
 }
 
 .confirm-panel h2 {
@@ -391,7 +378,7 @@ button:active {
 }
 
 .help-panel {
-  width: min(var(--help-panel-width), 100%);
+  width: min(520px, 100%);
 }
 
 .help-steps {
@@ -420,7 +407,7 @@ button:active {
 
 .report-table {
   width: 100%;
-  min-width: var(--report-table-min-width);
+  min-width: 720px;
   border-collapse: collapse;
 }
 
@@ -430,7 +417,7 @@ button:active {
   padding: var(--space-xs) var(--space-md);
   text-align: left;
   vertical-align: middle;
-  font-size: var(--font-table);
+  font-size: 0.9375rem;
 }
 
 .report-table th {
@@ -460,7 +447,7 @@ button:active {
 }
 
 .report-table .report-delete-cell {
-  width: var(--delete-column-width);
+  width: 38px;
   padding-right: 0;
   text-align: center;
 }
@@ -471,7 +458,7 @@ button:active {
 }
 
 .report-reason-cell {
-  min-width: var(--reason-column-min-width);
+  min-width: 300px;
 }
 
 .delete-report-btn {
@@ -482,7 +469,7 @@ button:active {
   padding: 0;
   background: var(--danger-soft);
   color: var(--danger);
-  font-size: var(--font-icon);
+  font-size: 1.125rem;
   line-height: 1;
 }
 
@@ -522,7 +509,7 @@ button:active {
 
 @media (max-width: 640px) {
   .app-shell {
-    width: calc(100vw - var(--mobile-page-inline-offset));
+    width: calc(100vw - 1rem);
     padding: var(--space-sm) 0;
     gap: var(--space-sm);
   }
@@ -563,11 +550,11 @@ button:active {
   }
 
   .report-table {
-    min-width: var(--report-table-mobile-min-width);
+    min-width: 560px;
   }
 
   button {
-    min-height: var(--mobile-control-height);
+    min-height: 36px;
     padding: 0 var(--space-lg);
   }
 
