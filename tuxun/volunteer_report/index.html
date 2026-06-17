@@ -92,21 +92,27 @@ https://tuxun.fun/solo/1920613e-60fc-469d-98f2-0c9f0d24213b" spellcheck="false">
   <div id="help-dialog" class="confirm-overlay" hidden>
     <div class="confirm-panel help-panel" role="dialog" aria-modal="true" aria-labelledby="help-title">
       <h2 id="help-title">使用说明</h2>
-      <p>本工具用于把图寻各类链接转换成举报处理所需的标准格式。</p>
-      <p>接受的格式包括：replay / replayplayer / replay-pano。</p>
+      <p>你可以随时点击按钮查看本说明。</p>
+      <p>本工具用于转换图寻 replay / replayplayer / replay-pano 等格式链接为举报处理所需的标准格式。</p>
       <ol class="help-steps">
-        <li>可以预设userId，填入上方输入框，点击“确认”。链接中包含userId时选填。</li>
-        <li>把可疑轮次的链接粘贴到“原始链接”框里，每行一个。</li>
+        <li>按钮当前显示的模式为记录的模式。点击按钮可以切换。</li>
+        <li>如欲预设userId，请在输入框内填入。点“确认”可以先保存；直接点“转换”也会自动使用输入框里的userId。</li>
+        <li>把可疑轮次链接粘贴到“原始链接”框里，每行一个，自动去重。</li>
         <li>点击“转换”，右边会出现轮次链接和举报原因表格。</li>
         <li>轮次链接可以点击，在新标签页中查看。</li>
-        <li>在“举报原因”表格里填写原因，点击“复制”或“导出”可以拿到结果。</li>
+        <li>在“举报原因”表格里填写详细原因。</li>
+        <li>点左侧“×”删除某行信息，此操作不可逆。</li>
+        <li>点“replayplayer”或“replay-pano”可以切换轮次链接格式。切到replayplayer时必须有可用userId。</li>
+        <li>“复制”到剪贴板，“导出”txt格式文件到本地。</li>
         <li>如果链接非法，请在“非法”栏中查看，点击链接自行处理。</li>
-        <li>点“replayplayer”或“replay-pano”可以切换轮次链接格式。</li>
-        <li>点“清空”会删除输入内容和转换结果。</li>
+        <li>点“清空”会删除输入内容和当前转换结果。</li>
       </ol>
-      <p>你可以随时点击按钮查看本说明。</p>
+      <label class="help-confirm-check" for="help-confirm-check">
+        <input id="help-confirm-check" type="checkbox" />
+        <span>我确认：我提交的模式、用户、复盘链接是匹配的，所有陈述都是符合我意图的。</span>
+      </label>
       <div class="confirm-actions">
-        <button id="close-help-btn" type="button">好的</button>
+        <button id="close-help-btn" type="button" hidden>好的</button>
       </div>
     </div>
   </div>

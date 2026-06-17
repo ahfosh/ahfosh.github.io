@@ -14,6 +14,7 @@ const toggleRoundFormatBtn = document.getElementById("toggle-round-format-btn");
 const helpBtn = document.getElementById("help-btn");
 const helpDialog = document.getElementById("help-dialog");
 const closeHelpBtn = document.getElementById("close-help-btn");
+const helpConfirmCheck = document.getElementById("help-confirm-check");
 const clearBtn = document.getElementById("clear-btn");
 const clearConfirm = document.getElementById("clear-confirm");
 const cancelClearBtn = document.getElementById("cancel-clear-btn");
@@ -24,6 +25,7 @@ const linkCount = document.getElementById("link-count");
 const TUXUN_ORIGIN = "https://tuxun.fun";
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const STORAGE_KEY = "tuxun_volunteer_report";
+const HELP_CONFIRMED_COOKIE = "tuxun_volunteer_report_help_confirmed";
 const REPORT_LAYOUT_VERSION = 5;
 const REGION_MODES = ["中国", "全球"];
 
@@ -620,17 +622,49 @@ function closeOnBackdrop(dialog, closeDialog) {
   });
 }
 
+function hasHelpConfirmedCookie() {
+  return document.cookie
+    .split(";")
+    .map(item => item.trim())
+    .includes(`${HELP_CONFIRMED_COOKIE}=1`);
+}
+
+function setHelpConfirmedCookie() {
+  document.cookie = `${HELP_CONFIRMED_COOKIE}=1; max-age=315360000; path=/; SameSite=Lax`;
+}
+
+function updateHelpCloseVisibility() {
+  closeHelpBtn.hidden = !helpConfirmCheck.checked;
+}
+
+function openHelpDialog() {
+  helpConfirmCheck.checked = hasHelpConfirmedCookie();
+  updateHelpCloseVisibility();
+  helpDialog.hidden = false;
+}
+
 function closeHelpDialog() {
   helpDialog.hidden = true;
 }
 
-helpBtn.addEventListener("click", () => {
-  helpDialog.hidden = false;
+helpBtn.addEventListener("click", openHelpDialog);
+
+helpConfirmCheck.addEventListener("change", updateHelpCloseVisibility);
+
+closeHelpBtn.addEventListener("click", () => {
+  if (!helpConfirmCheck.checked) {
+    return;
+  }
+
+  setHelpConfirmedCookie();
+  closeHelpDialog();
 });
 
-closeHelpBtn.addEventListener("click", closeHelpDialog);
-
-closeOnBackdrop(helpDialog, closeHelpDialog);
+helpDialog.addEventListener("click", event => {
+  if (event.target === helpDialog && hasHelpConfirmedCookie()) {
+    closeHelpDialog();
+  }
+});
 
 function clearAll() {
   sourceLinks.value = "";
@@ -676,3 +710,7 @@ if (!loadState()) {
 
 updateRegionModeButton();
 resizeSourceLinks();
+
+if (!hasHelpConfirmedCookie()) {
+  openHelpDialog();
+}
