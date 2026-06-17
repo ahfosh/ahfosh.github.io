@@ -281,7 +281,9 @@ textarea:focus,
 }
 
 button {
+  position: relative;
   display: inline-flex;
+  overflow: hidden;
   min-height: var(--control-height);
   align-items: center;
   justify-content: center;
@@ -293,15 +295,46 @@ button {
   cursor: pointer;
   font-size: calc(var(--font-md) + 2px);
   font-weight: 700;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  will-change: transform;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.2s ease,
+    color 0.18s ease,
+    transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+button::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.28) 45%, transparent 70%);
+  opacity: 0;
+  transform: translateX(-120%);
+  transition: opacity 0.22s ease, transform 0.48s ease;
 }
 
 button:hover {
   background: var(--primary-dark);
+  box-shadow: 0 8px 18px rgba(31, 111, 235, 0.18);
+  transform: translateY(-1px);
+}
+
+button:hover::before {
+  opacity: 1;
+  transform: translateX(120%);
 }
 
 button:active {
-  transform: translateY(1px);
+  box-shadow: none;
+  transform: translateY(1px) scale(0.98);
+  transition-duration: 0.08s;
+}
+
+button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring), 0 8px 18px rgba(31, 111, 235, 0.14);
 }
 
 .text-button {
@@ -314,6 +347,7 @@ button:active {
 
 .text-button:hover {
   background: var(--primary-soft);
+  box-shadow: 0 6px 14px rgba(31, 111, 235, 0.12);
 }
 
 .status {
@@ -342,6 +376,7 @@ button:active {
 
 .danger-button:hover {
   background: var(--danger-dark);
+  box-shadow: 0 8px 18px rgba(201, 55, 44, 0.18);
 }
 
 .ghost-button {
@@ -352,6 +387,7 @@ button:active {
 
 .ghost-button:hover {
   background: var(--surface-soft);
+  box-shadow: 0 6px 14px rgba(23, 32, 51, 0.1);
 }
 
 .region-mode-button {
@@ -376,12 +412,14 @@ button:active {
   border-color: var(--primary);
   background: var(--primary-soft);
   color: var(--primary);
+  box-shadow: 0 6px 14px rgba(31, 111, 235, 0.12);
 }
 
 .region-mode-button.is-china:hover {
   border-color: var(--danger-border);
   background: var(--danger-soft);
   color: var(--danger);
+  box-shadow: 0 6px 14px rgba(201, 55, 44, 0.12);
 }
 
 .confirm-overlay {
@@ -536,6 +574,7 @@ button:active {
 
 .record-delete-btn:hover {
   background: var(--danger-soft);
+  box-shadow: 0 6px 14px rgba(201, 55, 44, 0.12);
 }
 
 .confirm-actions {
@@ -622,6 +661,24 @@ button:active {
 
 .delete-report-btn:hover {
   background: var(--danger-soft-hover);
+  box-shadow: 0 6px 14px rgba(201, 55, 44, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button,
+  button::before {
+    transition: none;
+  }
+
+  button:hover,
+  button:active {
+    transform: none;
+  }
+
+  button:hover::before {
+    opacity: 0;
+    transform: translateX(-120%);
+  }
 }
 
 .report-reason-input {

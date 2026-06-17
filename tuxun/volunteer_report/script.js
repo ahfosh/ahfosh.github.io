@@ -622,6 +622,45 @@ function hasCurrentStashData() {
   );
 }
 
+function getComparableState(state) {
+  return {
+    sourceLinks: typeof state.sourceLinks === "string" ? state.sourceLinks : "",
+    reportRegionMode: REGION_MODES.includes(state.reportRegionMode) ? state.reportRegionMode : REGION_MODES[0],
+    presetUserId: typeof state.presetUserId === "string" ? state.presetUserId : "",
+    confirmedUserId: typeof state.confirmedUserId === "string" ? state.confirmedUserId : "",
+    roundOutputFormat: state.roundOutputFormat === "replayplayer" ? "replayplayer" : "replay-pano",
+    lastRoundItems: Array.isArray(state.lastRoundItems) ? state.lastRoundItems : [],
+    invalidEntries: Array.isArray(state.invalidEntries) ? state.invalidEntries : [],
+    reportReasons: state.reportReasons && typeof state.reportReasons === "object" ? state.reportReasons : {},
+    deletedReportLinks: Array.isArray(state.deletedReportLinks) ? [...state.deletedReportLinks].sort() : [],
+  };
+}
+
+function stableStringify(value) {
+  if (Array.isArray(value)) {
+    return `[${value.map(stableStringify).join(",")}]`;
+  }
+
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value)
+      .sort()
+      .map(key => `${JSON.stringify(key)}:${stableStringify(value[key])}`)
+      .join(",")}}`;
+  }
+
+  return JSON.stringify(value);
+}
+
+function hasMatchingStashedRecord(records, state) {
+  const comparableState = stableStringify(getComparableState(state));
+
+  return records.some(record => (
+    record
+      && record.state
+      && stableStringify(getComparableState(record.state)) === comparableState
+  ));
+}
+
 function getRecordSummary(record) {
   const state = record.state && typeof record.state === "object" ? record.state : {};
   const summary = record.summary && typeof record.summary === "object" ? record.summary : {};
@@ -783,7 +822,14 @@ function stashCurrentData() {
 
   try {
     const records = getStashedRecords();
-    records.unshift(buildStashRecord());
+    const record = buildStashRecord();
+
+    if (hasMatchingStashedRecord(records, record.state)) {
+      setStatus("和已有暂存记录相同，未重复暂存。");
+      return;
+    }
+
+    records.unshift(record);
     saveStashedRecords(records);
     renderStashedRecords();
     setStatus(`已暂存，当前共有${records.length}条记录。`, "success");
