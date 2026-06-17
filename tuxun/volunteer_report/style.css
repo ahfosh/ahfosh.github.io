@@ -143,7 +143,7 @@ textarea {
 
 .preset-user-controls {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: var(--space-md);
   margin-bottom: var(--space-sm);
 }
@@ -288,7 +288,7 @@ button {
   background: var(--primary);
   color: var(--on-primary);
   cursor: pointer;
-  font-size: var(--font-md);
+  font-size: calc(var(--font-md) + 2px);
   font-weight: 700;
   transition: background-color 0.2s ease, transform 0.2s ease;
 }
@@ -306,7 +306,7 @@ button:active {
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--primary);
-  font-size: var(--font-sm);
+  font-size: calc(var(--font-sm) + 2px);
 }
 
 .text-button:hover {
@@ -349,6 +349,36 @@ button:active {
 
 .ghost-button:hover {
   background: var(--surface-soft);
+}
+
+.region-mode-button {
+  min-width: 4.25rem;
+  border: 1px solid var(--border);
+  padding: 0 var(--space-xl);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.region-mode-button.is-china {
+  border-color: var(--danger-border);
+  color: var(--danger);
+}
+
+.region-mode-button.is-global {
+  border-color: rgba(31, 111, 235, 0.3);
+  color: var(--primary);
+}
+
+.region-mode-button:hover {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.region-mode-button.is-china:hover {
+  border-color: var(--danger-border);
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 .confirm-overlay {
@@ -469,7 +499,7 @@ button:active {
   padding: 0;
   background: var(--danger-soft);
   color: var(--danger);
-  font-size: 1.125rem;
+  font-size: calc(1.125rem + 2px);
   line-height: 1;
 }
 

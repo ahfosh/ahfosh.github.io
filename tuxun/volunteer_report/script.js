@@ -1,4 +1,5 @@
 const sourceLinks = document.getElementById("source-links");
+const regionModeBtn = document.getElementById("region-mode-btn");
 const presetUserIdInput = document.getElementById("preset-user-id");
 const confirmUserIdBtn = document.getElementById("confirm-user-id-btn");
 const invalidOutput = document.getElementById("invalid-output");
@@ -24,8 +25,10 @@ const TUXUN_ORIGIN = "https://tuxun.fun";
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const STORAGE_KEY = "tuxun_volunteer_report";
 const REPORT_LAYOUT_VERSION = 5;
+const REGION_MODES = ["中国", "全球"];
 
 let confirmedUserId = "";
+let reportRegionMode = REGION_MODES[0];
 let roundOutputFormat = "replay-pano";
 let lastRoundItems = [];
 let invalidEntries = [];
@@ -36,6 +39,7 @@ let saveStateTimer = null;
 function getStateSnapshot() {
   return {
     sourceLinks: sourceLinks.value,
+    reportRegionMode,
     presetUserId: presetUserIdInput.value,
     confirmedUserId,
     roundOutputFormat,
@@ -60,6 +64,19 @@ function scheduleSaveState() {
   saveStateTimer = setTimeout(saveState, 300);
 }
 
+function updateRegionModeButton() {
+  regionModeBtn.textContent = reportRegionMode;
+  regionModeBtn.setAttribute("aria-label", `当前模式：${reportRegionMode}`);
+  regionModeBtn.classList.toggle("is-china", reportRegionMode === REGION_MODES[0]);
+  regionModeBtn.classList.toggle("is-global", reportRegionMode === REGION_MODES[1]);
+}
+
+function toggleRegionMode() {
+  reportRegionMode = reportRegionMode === REGION_MODES[0] ? REGION_MODES[1] : REGION_MODES[0];
+  updateRegionModeButton();
+  saveState();
+}
+
 function resizeSourceLinks() {
   sourceLinks.style.height = "auto";
   const style = window.getComputedStyle(sourceLinks);
@@ -77,6 +94,8 @@ function loadState() {
     const state = JSON.parse(raw);
     sourceLinks.value = typeof state.sourceLinks === "string" ? state.sourceLinks : "";
     resizeSourceLinks();
+    reportRegionMode = REGION_MODES.includes(state.reportRegionMode) ? state.reportRegionMode : REGION_MODES[0];
+    updateRegionModeButton();
     presetUserIdInput.value = typeof state.presetUserId === "string" ? state.presetUserId : "";
     confirmedUserId = typeof state.confirmedUserId === "string" ? state.confirmedUserId : "";
     roundOutputFormat = state.roundOutputFormat === "replayplayer" ? "replayplayer" : "replay-pano";
@@ -409,10 +428,31 @@ function deleteReportRow(reportKey) {
   saveState();
 }
 
+function getReportHeaderUserId() {
+  const resolved = resolveRoundUserId(lastRoundItems);
+
+  if (!resolved.conflict && resolved.userId) {
+    return resolved.userId;
+  }
+
+  return confirmedUserId || presetUserIdInput.value.trim();
+}
+
+function getReportHeaderText() {
+  return `uid: ${getReportHeaderUserId()}，${reportRegionMode}`;
+}
+
 function getReportExportText() {
-  return getReportRows()
-    .map(row => `${row.reportLink}，${row.reason}`)
-    .join("\n");
+  const rows = getReportRows();
+
+  if (rows.length === 0) {
+    return "";
+  }
+
+  return [
+    getReportHeaderText(),
+    ...rows.map(row => `${row.reportLink}，${row.reason}`),
+  ].join("\n");
 }
 
 function exportReportText() {
@@ -551,6 +591,8 @@ sourceLinks.addEventListener("input", () => {
   scheduleSaveState();
 });
 
+regionModeBtn.addEventListener("click", toggleRegionMode);
+
 presetUserIdInput.addEventListener("input", scheduleSaveState);
 
 confirmUserIdBtn.addEventListener("click", () => {
@@ -593,6 +635,8 @@ closeOnBackdrop(helpDialog, closeHelpDialog);
 function clearAll() {
   sourceLinks.value = "";
   resizeSourceLinks();
+  reportRegionMode = REGION_MODES[0];
+  updateRegionModeButton();
   presetUserIdInput.value = "";
   confirmedUserId = "";
   lastRoundItems = [];
@@ -630,4 +674,5 @@ if (!loadState()) {
   renderReportPanel();
 }
 
+updateRegionModeButton();
 resizeSourceLinks();
