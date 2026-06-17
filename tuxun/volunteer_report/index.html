@@ -13,12 +13,16 @@
     <header class="page-header">
       <h1>图寻复盘链接转换工具</h1>
       <div class="header-actions">
+        <div class="view-tabs" role="tablist" aria-label="界面切换">
+          <button id="converter-view-btn" class="view-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="converter-view">链接转换</button>
+          <button id="review-view-btn" class="view-tab" type="button" role="tab" aria-selected="false" aria-controls="review-view">复盘处理</button>
+        </div>
         <button id="help-btn" class="ghost-button" type="button">使用说明</button>
         <button id="clear-btn" class="danger-button" type="button">清空</button>
       </div>
     </header>
 
-    <section class="workspace" aria-label="链接转换工作区">
+    <section id="converter-view" class="view-panel workspace" aria-label="链接转换工作区" role="tabpanel" aria-labelledby="converter-view-btn">
       <div class="input-panel">
         <div class="preset-user">
           <div class="preset-user-controls">
@@ -59,6 +63,42 @@ https://tuxun.fun/solo/1920613e-60fc-469d-98f2-0c9f0d24213b" spellcheck="false">
             <button class="text-button" data-copy-target="invalid-output" type="button">复制</button>
           </div>
           <div id="invalid-output" class="link-list" aria-live="polite"></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="review-view" class="view-panel review-workspace" aria-label="复盘举报处理界面" role="tabpanel" aria-labelledby="review-view-btn" hidden>
+      <section class="review-table-panel" aria-label="复盘链接与举报原因">
+        <div class="review-table-content">
+          <div class="review-table-wrap">
+            <table id="review-table" class="review-table">
+              <tbody id="report-table-body">
+                <tr class="report-empty-row">
+                  <td colspan="3">暂无复盘链接</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="review-actions">
+            <button id="copy-report-btn" class="text-button" type="button">复制</button>
+            <button id="export-report-btn" class="text-button" type="button">导出</button>
+          </div>
+        </div>
+      </section>
+
+      <div class="frame-grid" aria-label="复盘与对局回放展示区">
+        <section class="frame-panel" aria-label="复盘">
+          <div class="frame-canvas">
+            <iframe id="review-frame" title="复盘展示" referrerpolicy="no-referrer-when-downgrade" hidden></iframe>
+            <p id="review-frame-empty" class="frame-empty">选择上方复盘链接</p>
+          </div>
+        </section>
+
+        <section class="frame-panel" aria-label="对局回放">
+          <div class="frame-canvas">
+            <iframe id="playback-frame" title="对局回放展示" referrerpolicy="no-referrer-when-downgrade" hidden></iframe>
+            <p id="playback-frame-empty" class="frame-empty">选择上方复盘链接</p>
+          </div>
         </section>
       </div>
     </section>
