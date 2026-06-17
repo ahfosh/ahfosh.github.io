@@ -53,7 +53,7 @@ textarea {
 }
 
 .page-header h1 {
-  margin: 0 0 6px;
+  margin: 0;
   font-size: clamp(22px, 2.7vw, 32px);
   line-height: 1.2;
 }
@@ -62,13 +62,11 @@ textarea {
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  justify-content: flex-end;
   gap: 10px;
 }
 
 .workspace {
   display: grid;
-  min-width: 0;
   grid-template-columns: minmax(0, 520px) minmax(0, 1fr);
   align-items: start;
   gap: 18px;
@@ -85,14 +83,12 @@ textarea {
 
 .input-panel {
   display: flex;
-  width: 100%;
   flex-direction: column;
   padding: 16px;
 }
 
 .output-grid {
   display: grid;
-  width: 100%;
   min-width: 0;
   grid-template-columns: 1fr;
   gap: 18px;
@@ -118,27 +114,20 @@ textarea {
 
 .preset-user-controls {
   display: grid;
-  min-width: 0;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
   margin-bottom: 8px;
 }
 
-.preset-user-controls input {
-  width: 100%;
-  min-height: 40px;
+.preset-user-controls input,
+textarea,
+.report-reason-input {
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 0 12px;
   background: var(--surface-soft);
   color: var(--text);
   outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.preset-user-controls input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.14);
 }
 
 .panel-heading label,
@@ -164,19 +153,21 @@ textarea {
 
 textarea {
   width: 100%;
-  max-width: 100%;
   min-width: 0;
-  border: 1px solid var(--border);
-  border-radius: 8px;
   padding: 12px;
-  background: var(--surface-soft);
-  color: var(--text);
   line-height: 1.5;
-  outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-textarea:focus {
+.preset-user-controls input,
+.report-reason-input {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+}
+
+.preset-user-controls input:focus,
+textarea:focus,
+.report-reason-input:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.14);
 }
@@ -195,7 +186,6 @@ textarea:focus {
 
 .invalid-item {
   display: flex;
-  width: fit-content;
   max-width: 100%;
   min-width: 0;
   flex-direction: column;
@@ -217,7 +207,6 @@ textarea:focus {
 .link-list a,
 .link-list .plain-link,
 .empty-state {
-  width: fit-content;
   max-width: 100%;
   min-width: 0;
   border: 1px solid var(--border);
@@ -233,7 +222,6 @@ textarea:focus {
   display: block;
   text-decoration: none;
   overflow-wrap: anywhere;
-  white-space: normal;
 }
 
 .link-list a:hover {
@@ -300,8 +288,6 @@ button:active {
 .status {
   flex: 1 1 auto;
   min-width: 0;
-  min-height: 0;
-  margin: 0;
   padding: 0 8px;
   color: var(--muted);
   font-size: 13px;
@@ -321,7 +307,6 @@ button:active {
 
 .danger-button {
   background: var(--danger);
-  color: #ffffff;
 }
 
 .danger-button:hover {
@@ -375,7 +360,6 @@ button:active {
 .help-steps {
   margin: 14px 0;
   padding-left: 22px;
-  color: var(--text);
   line-height: 1.65;
 }
 
@@ -391,7 +375,6 @@ button:active {
 }
 
 .report-table-wrap {
-  min-height: 0;
   overflow-x: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -418,7 +401,6 @@ button:active {
   top: 0;
   z-index: 1;
   background: var(--surface);
-  color: var(--text);
   font-size: 13px;
 }
 
@@ -440,10 +422,10 @@ button:active {
   text-decoration: underline;
 }
 
-.report-delete-cell {
+.report-table .report-delete-cell {
   width: 38px;
-  padding-right: 0 !important;
-  text-align: center !important;
+  padding-right: 0;
+  text-align: center;
 }
 
 .report-link-cell {
@@ -457,7 +439,6 @@ button:active {
 
 .delete-report-btn {
   width: 28px;
-  min-width: 28px;
   min-height: 28px;
   border: 1px solid #f0c2bf;
   border-radius: 8px;
@@ -470,35 +451,17 @@ button:active {
 
 .delete-report-btn:hover {
   background: #ffe8e6;
-  color: var(--danger);
 }
 
 .report-reason-input {
-  width: 100%;
   min-width: 0;
-  min-height: 40px;
   font-size: 16px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0 12px;
-  background: var(--surface-soft);
-  color: var(--text);
-  outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.report-reason-input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.14);
 }
 
 .report-row-count {
   display: inline-flex;
   min-height: 32px;
   align-items: center;
-  justify-content: center;
-  color: var(--muted);
-  font-size: 13px;
 }
 
 .report-empty-row td {
