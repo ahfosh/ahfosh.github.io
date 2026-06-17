@@ -272,8 +272,11 @@ textarea:focus,
   color: var(--muted);
 }
 
-.convert-button {
-  align-self: flex-end;
+.convert-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
   margin-top: clamp(var(--space-md), 1.6dvh, 0.875rem);
 }
 
@@ -411,6 +414,13 @@ button:active {
   width: min(520px, 100%);
 }
 
+.records-panel {
+  display: flex;
+  width: min(720px, 100%);
+  max-height: min(82dvh, 720px);
+  flex-direction: column;
+}
+
 .help-steps {
   margin: 0.875rem 0;
   padding-left: var(--space-4xl);
@@ -441,6 +451,91 @@ button:active {
   height: 1rem;
   margin: 0.125rem 0 0;
   accent-color: var(--primary);
+}
+
+.records-list {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+  overflow-y: auto;
+}
+
+.record-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  background: var(--surface-soft);
+}
+
+.record-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.record-title {
+  margin: 0;
+  font-size: var(--font-lg);
+}
+
+.record-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+}
+
+.record-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-xs) var(--space-md);
+  margin: var(--space-sm) 0 0;
+  color: var(--muted);
+  font-size: var(--font-sm);
+}
+
+.record-meta div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.record-preview {
+  margin-top: var(--space-sm);
+}
+
+.record-preview summary {
+  color: var(--primary);
+  cursor: pointer;
+  font-size: var(--font-sm);
+  font-weight: 700;
+}
+
+.record-preview pre {
+  max-height: 180px;
+  margin: var(--space-sm) 0 0;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--font-sm);
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.record-delete-btn {
+  border-color: var(--danger-border);
+  color: var(--danger);
+}
+
+.record-delete-btn:hover {
+  background: var(--danger-soft);
 }
 
 .confirm-actions {
@@ -594,6 +689,19 @@ button:active {
   .report-panel .panel-actions {
     width: 100%;
     justify-content: flex-start;
+  }
+
+  .record-header {
+    flex-direction: column;
+  }
+
+  .record-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .record-meta {
+    grid-template-columns: 1fr;
   }
 
   .input-panel,

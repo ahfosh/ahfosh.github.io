@@ -4,6 +4,7 @@ const presetUserIdInput = document.getElementById("preset-user-id");
 const confirmUserIdBtn = document.getElementById("confirm-user-id-btn");
 const invalidOutput = document.getElementById("invalid-output");
 const convertBtn = document.getElementById("convert-btn");
+const stashBtn = document.getElementById("stash-btn");
 const reportLinkTitle = document.getElementById("report-link-title");
 const reportTableBody = document.getElementById("report-table-body");
 const reportRowCount = document.getElementById("report-row-count");
@@ -11,10 +12,14 @@ const copyReportBtn = document.getElementById("copy-report-btn");
 const copyInvalidBtn = document.getElementById("copy-invalid-btn");
 const exportReportBtn = document.getElementById("export-report-btn");
 const toggleRoundFormatBtn = document.getElementById("toggle-round-format-btn");
+const viewRecordsBtn = document.getElementById("view-records-btn");
 const helpBtn = document.getElementById("help-btn");
 const helpDialog = document.getElementById("help-dialog");
 const closeHelpBtn = document.getElementById("close-help-btn");
 const helpConfirmCheck = document.getElementById("help-confirm-check");
+const recordsDialog = document.getElementById("records-dialog");
+const recordsList = document.getElementById("records-list");
+const closeRecordsBtn = document.getElementById("close-records-btn");
 const clearBtn = document.getElementById("clear-btn");
 const clearConfirm = document.getElementById("clear-confirm");
 const cancelClearBtn = document.getElementById("cancel-clear-btn");
@@ -25,6 +30,7 @@ const linkCount = document.getElementById("link-count");
 const TUXUN_ORIGIN = "https://tuxun.fun";
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const STORAGE_KEY = "tuxun_volunteer_report";
+const RECORDS_STORAGE_KEY = "tuxun_volunteer_report_records";
 const HELP_CONFIRMED_COOKIE = "tuxun_volunteer_report_help_confirmed";
 const REPORT_LAYOUT_VERSION = 5;
 const REGION_MODES = ["中国", "全球"];
@@ -86,6 +92,24 @@ function resizeSourceLinks() {
   sourceLinks.style.height = `${sourceLinks.scrollHeight + borderHeight}px`;
 }
 
+function applyStateSnapshot(state) {
+  sourceLinks.value = typeof state.sourceLinks === "string" ? state.sourceLinks : "";
+  resizeSourceLinks();
+  reportRegionMode = REGION_MODES.includes(state.reportRegionMode) ? state.reportRegionMode : REGION_MODES[0];
+  updateRegionModeButton();
+  presetUserIdInput.value = typeof state.presetUserId === "string" ? state.presetUserId : "";
+  confirmedUserId = typeof state.confirmedUserId === "string" ? state.confirmedUserId : "";
+  roundOutputFormat = state.roundOutputFormat === "replayplayer" ? "replayplayer" : "replay-pano";
+  lastRoundItems = Array.isArray(state.lastRoundItems) ? state.lastRoundItems : [];
+  reportReasons = state.reportReasons && typeof state.reportReasons === "object" ? state.reportReasons : {};
+  deletedReportLinks = state.reportLayoutVersion === REPORT_LAYOUT_VERSION && Array.isArray(state.deletedReportLinks)
+    ? state.deletedReportLinks
+    : [];
+  setInvalidOutput(Array.isArray(state.invalidEntries) ? state.invalidEntries : []);
+  updateLinkCount();
+  renderReportPanel();
+}
+
 function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -93,22 +117,7 @@ function loadState() {
       return false;
     }
 
-    const state = JSON.parse(raw);
-    sourceLinks.value = typeof state.sourceLinks === "string" ? state.sourceLinks : "";
-    resizeSourceLinks();
-    reportRegionMode = REGION_MODES.includes(state.reportRegionMode) ? state.reportRegionMode : REGION_MODES[0];
-    updateRegionModeButton();
-    presetUserIdInput.value = typeof state.presetUserId === "string" ? state.presetUserId : "";
-    confirmedUserId = typeof state.confirmedUserId === "string" ? state.confirmedUserId : "";
-    roundOutputFormat = state.roundOutputFormat === "replayplayer" ? "replayplayer" : "replay-pano";
-    lastRoundItems = Array.isArray(state.lastRoundItems) ? state.lastRoundItems : [];
-    reportReasons = state.reportReasons && typeof state.reportReasons === "object" ? state.reportReasons : {};
-    deletedReportLinks = state.reportLayoutVersion === REPORT_LAYOUT_VERSION && Array.isArray(state.deletedReportLinks)
-      ? state.deletedReportLinks
-      : [];
-    setInvalidOutput(Array.isArray(state.invalidEntries) ? state.invalidEntries : []);
-    updateLinkCount();
-    renderReportPanel();
+    applyStateSnapshot(JSON.parse(raw));
     return true;
   } catch (error) {
     return false;
@@ -587,6 +596,233 @@ async function copyText(text) {
   }
 }
 
+function getStashedRecords() {
+  try {
+    const raw = localStorage.getItem(RECORDS_STORAGE_KEY);
+    const records = raw ? JSON.parse(raw) : [];
+    return Array.isArray(records) ? records : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function saveStashedRecords(records) {
+  localStorage.setItem(RECORDS_STORAGE_KEY, JSON.stringify(records));
+}
+
+function hasCurrentStashData() {
+  return Boolean(
+    sourceLinks.value.trim()
+      || presetUserIdInput.value.trim()
+      || confirmedUserId
+      || lastRoundItems.length
+      || invalidEntries.length
+      || Object.keys(reportReasons).length
+      || deletedReportLinks.length,
+  );
+}
+
+function getRecordSummary(record) {
+  const state = record.state && typeof record.state === "object" ? record.state : {};
+  const summary = record.summary && typeof record.summary === "object" ? record.summary : {};
+
+  return {
+    mode: REGION_MODES.includes(summary.mode) ? summary.mode : state.reportRegionMode || REGION_MODES[0],
+    userId: summary.userId || state.confirmedUserId || state.presetUserId || "未设置",
+    sourceCount: Number.isFinite(summary.sourceCount) ? summary.sourceCount : extractLinks(state.sourceLinks || "").length,
+    roundCount: Number.isFinite(summary.roundCount)
+      ? summary.roundCount
+      : Array.isArray(state.lastRoundItems) ? state.lastRoundItems.length : 0,
+    invalidCount: Number.isFinite(summary.invalidCount)
+      ? summary.invalidCount
+      : Array.isArray(state.invalidEntries) ? state.invalidEntries.length : 0,
+    outputFormat: summary.outputFormat || state.roundOutputFormat || "replay-pano",
+  };
+}
+
+function buildStashRecord() {
+  const state = JSON.parse(JSON.stringify(getStateSnapshot()));
+  const rawSourceLinks = getUniqueSourceLinks().links.length;
+
+  return {
+    id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+    createdAt: new Date().toISOString(),
+    summary: {
+      mode: reportRegionMode,
+      userId: getReportHeaderUserId() || confirmedUserId || presetUserIdInput.value.trim() || "未设置",
+      sourceCount: rawSourceLinks,
+      roundCount: getReportRows().length,
+      invalidCount: invalidEntries.length,
+      outputFormat: roundOutputFormat,
+    },
+    state,
+  };
+}
+
+function formatRecordTime(createdAt) {
+  const date = new Date(createdAt);
+
+  if (Number.isNaN(date.getTime())) {
+    return "未知时间";
+  }
+
+  return date.toLocaleString("zh-CN", { hour12: false });
+}
+
+function buildRecordPreview(record) {
+  const state = record.state && typeof record.state === "object" ? record.state : {};
+  const reasons = Object.entries(state.reportReasons || {})
+    .filter(([, reason]) => reason)
+    .map(([link, reason]) => `${getDisplayLinkText(link)}，${reason}`);
+  const invalidLinks = Array.isArray(state.invalidEntries)
+    ? state.invalidEntries.map(entry => `${entry.link}${entry.reason ? `（${entry.reason}）` : ""}`)
+    : [];
+
+  return [
+    `模式：${state.reportRegionMode || REGION_MODES[0]}`,
+    `userId：${state.confirmedUserId || state.presetUserId || "未设置"}`,
+    `轮次格式：${state.roundOutputFormat || "replay-pano"}`,
+    "",
+    "原始链接：",
+    state.sourceLinks && state.sourceLinks.trim() ? state.sourceLinks.trim() : "（空）",
+    "",
+    "举报原因：",
+    reasons.length ? reasons.join("\n") : "（空）",
+    "",
+    "非法链接：",
+    invalidLinks.length ? invalidLinks.join("\n") : "（空）",
+  ].join("\n");
+}
+
+function renderStashedRecords() {
+  const records = getStashedRecords();
+  recordsList.textContent = "";
+
+  if (records.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "empty-state";
+    empty.textContent = "暂无暂存记录";
+    recordsList.appendChild(empty);
+    return;
+  }
+
+  records.forEach(record => {
+    const summary = getRecordSummary(record);
+    const item = document.createElement("article");
+    item.className = "record-item";
+
+    const header = document.createElement("div");
+    header.className = "record-header";
+
+    const title = document.createElement("h3");
+    title.className = "record-title";
+    title.textContent = formatRecordTime(record.createdAt);
+    header.appendChild(title);
+
+    const actions = document.createElement("div");
+    actions.className = "record-actions";
+
+    const restoreButton = document.createElement("button");
+    restoreButton.className = "text-button";
+    restoreButton.type = "button";
+    restoreButton.textContent = "恢复";
+    restoreButton.addEventListener("click", () => {
+      restoreStashedRecord(record.id);
+    });
+    actions.appendChild(restoreButton);
+
+    const deleteButton = document.createElement("button");
+    deleteButton.className = "text-button record-delete-btn";
+    deleteButton.type = "button";
+    deleteButton.textContent = "删除";
+    deleteButton.addEventListener("click", () => {
+      deleteStashedRecord(record.id);
+    });
+    actions.appendChild(deleteButton);
+
+    header.appendChild(actions);
+    item.appendChild(header);
+
+    const meta = document.createElement("div");
+    meta.className = "record-meta";
+    [
+      `模式：${summary.mode}`,
+      `userId：${summary.userId}`,
+      `原始${summary.sourceCount}条`,
+      `轮次${summary.roundCount}条`,
+      `非法${summary.invalidCount}条`,
+      `格式：${summary.outputFormat}`,
+    ].forEach(text => {
+      const metaItem = document.createElement("div");
+      metaItem.textContent = text;
+      meta.appendChild(metaItem);
+    });
+    item.appendChild(meta);
+
+    const details = document.createElement("details");
+    details.className = "record-preview";
+
+    const summaryNode = document.createElement("summary");
+    summaryNode.textContent = "查看数据";
+    details.appendChild(summaryNode);
+
+    const preview = document.createElement("pre");
+    preview.textContent = buildRecordPreview(record);
+    details.appendChild(preview);
+    item.appendChild(details);
+
+    recordsList.appendChild(item);
+  });
+}
+
+function stashCurrentData() {
+  if (!hasCurrentStashData()) {
+    setStatus("没有可暂存的数据。", "error");
+    return;
+  }
+
+  try {
+    const records = getStashedRecords();
+    records.unshift(buildStashRecord());
+    saveStashedRecords(records);
+    renderStashedRecords();
+    setStatus(`已暂存，当前共有${records.length}条记录。`, "success");
+  } catch (error) {
+    setStatus("暂存失败：浏览器存储空间不足。", "error");
+  }
+}
+
+function restoreStashedRecord(recordId) {
+  const record = getStashedRecords().find(item => item.id === recordId);
+
+  if (!record || !record.state) {
+    setStatus("未找到这条暂存记录。", "error");
+    renderStashedRecords();
+    return;
+  }
+
+  applyStateSnapshot(record.state);
+  saveState();
+  closeRecordsDialog();
+  setStatus("已恢复暂存记录。", "success");
+}
+
+function deleteStashedRecord(recordId) {
+  const records = getStashedRecords().filter(record => record.id !== recordId);
+  saveStashedRecords(records);
+  renderStashedRecords();
+  setStatus(`已删除暂存记录，剩余${records.length}条。`, "success");
+}
+
+function openRecordsDialog() {
+  renderStashedRecords();
+  recordsDialog.hidden = false;
+}
+
+function closeRecordsDialog() {
+  recordsDialog.hidden = true;
+}
+
 sourceLinks.addEventListener("input", () => {
   resizeSourceLinks();
   updateLinkCount();
@@ -602,7 +838,9 @@ confirmUserIdBtn.addEventListener("click", () => {
 });
 
 convertBtn.addEventListener("click", convertLinks);
+stashBtn.addEventListener("click", stashCurrentData);
 toggleRoundFormatBtn.addEventListener("click", toggleRoundFormat);
+viewRecordsBtn.addEventListener("click", openRecordsDialog);
 
 copyReportBtn.addEventListener("click", () => {
   copyText(getReportExportText());
@@ -613,6 +851,8 @@ copyInvalidBtn.addEventListener("click", () => {
 });
 
 exportReportBtn.addEventListener("click", exportReportText);
+
+closeRecordsBtn.addEventListener("click", closeRecordsDialog);
 
 function closeOnBackdrop(dialog, closeDialog) {
   dialog.addEventListener("click", event => {
@@ -665,6 +905,8 @@ helpDialog.addEventListener("click", event => {
     closeHelpDialog();
   }
 });
+
+closeOnBackdrop(recordsDialog, closeRecordsDialog);
 
 function clearAll() {
   sourceLinks.value = "";

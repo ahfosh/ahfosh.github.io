@@ -13,6 +13,7 @@
     <header class="page-header">
       <h1>图寻复盘链接转换工具</h1>
       <div class="header-actions">
+        <button id="view-records-btn" class="ghost-button" type="button">查看记录</button>
         <button id="help-btn" class="ghost-button" type="button">使用说明</button>
         <button id="clear-btn" class="danger-button" type="button">清空</button>
       </div>
@@ -35,7 +36,10 @@
 https://tuxun.fun/replay?gameId=1920613e-60fc-469d-98f2-0c9f0d24213b&round=1
 https://tuxun.fun/replayplayer?gameId=1920613e-60fc-469d-98f2-0c9f0d24213b&round=1&userId=USER_ID
 https://tuxun.fun/solo/1920613e-60fc-469d-98f2-0c9f0d24213b" spellcheck="false"></textarea>
-        <button id="convert-btn" class="convert-button" type="button">转换</button>
+        <div class="convert-actions">
+          <button id="stash-btn" class="ghost-button" type="button">暂存</button>
+          <button id="convert-btn" class="convert-button" type="button">转换</button>
+        </div>
       </div>
 
       <div class="output-grid">
@@ -99,6 +103,7 @@ https://tuxun.fun/solo/1920613e-60fc-469d-98f2-0c9f0d24213b" spellcheck="false">
         <li>如欲预设userId，请在输入框内填入。点“确认”可以先保存；直接点“转换”也会自动使用输入框里的userId。</li>
         <li>把可疑轮次链接粘贴到“原始链接”框里，每行一个，自动去重。</li>
         <li>点击“转换”，右边会出现轮次链接和举报原因表格。</li>
+        <li>点“暂存”可以保存当前内容，点“查看记录”可以查看、恢复或删除暂存记录。</li>
         <li>轮次链接可以点击，在新标签页中查看。</li>
         <li>在“举报原因”表格里填写详细原因。</li>
         <li>点左侧“×”删除某行信息，此操作不可逆。</li>
@@ -113,6 +118,16 @@ https://tuxun.fun/solo/1920613e-60fc-469d-98f2-0c9f0d24213b" spellcheck="false">
       </label>
       <div class="confirm-actions">
         <button id="close-help-btn" type="button" hidden>好的</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="records-dialog" class="confirm-overlay" hidden>
+    <div class="confirm-panel records-panel" role="dialog" aria-modal="true" aria-labelledby="records-title">
+      <h2 id="records-title">暂存记录</h2>
+      <div id="records-list" class="records-list" aria-live="polite"></div>
+      <div class="confirm-actions">
+        <button id="close-records-btn" type="button">关闭</button>
       </div>
     </div>
   </div>
