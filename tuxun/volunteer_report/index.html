@@ -72,6 +72,13 @@ https://tuxun.fun/solo/1920613e-60fc-469d-98f2-0c9f0d24213b" spellcheck="false">
         <div class="review-table-content">
           <div class="review-table-wrap">
             <table id="review-table" class="review-table">
+              <thead>
+                <tr>
+                  <th class="report-delete-cell" scope="col"></th>
+                  <th scope="col">轮次</th>
+                  <th scope="col">原因</th>
+                </tr>
+              </thead>
               <tbody id="report-table-body">
                 <tr class="report-empty-row">
                   <td colspan="3">暂无复盘链接</td>
@@ -80,27 +87,12 @@ https://tuxun.fun/solo/1920613e-60fc-469d-98f2-0c9f0d24213b" spellcheck="false">
             </table>
           </div>
           <div class="review-actions">
+            <span id="review-row-count" class="review-row-count">0条链接</span>
             <button id="copy-report-btn" class="text-button" type="button">复制</button>
             <button id="export-report-btn" class="text-button" type="button">导出</button>
           </div>
         </div>
       </section>
-
-      <div class="frame-grid" aria-label="复盘与对局回放展示区">
-        <section class="frame-panel" aria-label="复盘">
-          <div class="frame-canvas">
-            <iframe id="review-frame" title="复盘展示" referrerpolicy="no-referrer-when-downgrade" hidden></iframe>
-            <p id="review-frame-empty" class="frame-empty">选择上方复盘链接</p>
-          </div>
-        </section>
-
-        <section class="frame-panel" aria-label="对局回放">
-          <div class="frame-canvas">
-            <iframe id="playback-frame" title="对局回放展示" referrerpolicy="no-referrer-when-downgrade" hidden></iframe>
-            <p id="playback-frame-empty" class="frame-empty">选择上方复盘链接</p>
-          </div>
-        </section>
-      </div>
     </section>
   </main>
 

@@ -9,17 +9,10 @@ const converterView = document.getElementById("converter-view");
 const reviewView = document.getElementById("review-view");
 const converterViewBtn = document.getElementById("converter-view-btn");
 const reviewViewBtn = document.getElementById("review-view-btn");
-const reviewTable = document.getElementById("review-table");
 const reportTableBody = document.getElementById("report-table-body");
 const reviewRowCount = document.getElementById("review-row-count");
 const copyReportBtn = document.getElementById("copy-report-btn");
 const exportReportBtn = document.getElementById("export-report-btn");
-const reviewFrame = document.getElementById("review-frame");
-const playbackFrame = document.getElementById("playback-frame");
-const reviewFrameEmpty = document.getElementById("review-frame-empty");
-const playbackFrameEmpty = document.getElementById("playback-frame-empty");
-const reviewFrameLabel = document.getElementById("review-frame-label");
-const playbackFrameLabel = document.getElementById("playback-frame-label");
 const toggleRoundFormatBtn = document.getElementById("toggle-round-format-btn");
 const helpBtn = document.getElementById("help-btn");
 const helpDialog = document.getElementById("help-dialog");
@@ -43,7 +36,6 @@ const outputLinks = { "round-output": [] };
 let invalidEntries = [];
 let reportReasons = {};
 let deletedReportLinks = [];
-let activeReportLink = "";
 let activeView = "converter";
 let saveStateTimer = null;
 
@@ -59,7 +51,6 @@ function getStateSnapshot() {
     reportReasons,
     reportLayoutVersion: REPORT_LAYOUT_VERSION,
     deletedReportLinks,
-    activeReportLink,
     activeView,
   };
 }
@@ -94,7 +85,6 @@ function loadState() {
     deletedReportLinks = state.reportLayoutVersion === REPORT_LAYOUT_VERSION && Array.isArray(state.deletedReportLinks)
       ? state.deletedReportLinks
       : [];
-    activeReportLink = typeof state.activeReportLink === "string" ? state.activeReportLink : "";
     activeView = state.activeView === "review" ? "review" : "converter";
     setOutputLinks(
       roundOutput,
@@ -109,10 +99,6 @@ function loadState() {
   } catch (error) {
     return false;
   }
-}
-
-function clamp(value, min, max) {
-  return Math.min(max, Math.max(min, value));
 }
 
 function extractLinks(text) {
@@ -420,42 +406,18 @@ function setActiveView(view, shouldSave = true) {
   }
 }
 
-function requestReviewFullscreen() {
-  if (!document.fullscreenEnabled || document.fullscreenElement) {
-    return;
-  }
-
-  document.documentElement.requestFullscreen({ navigationUI: "hide" }).catch(() => {
-    // Fullscreen can be denied by browser settings or lack of user activation.
-  });
-}
-
-function exitReviewFullscreen() {
-  if (!document.fullscreenElement) {
-    return;
-  }
-
-  document.exitFullscreen().catch(() => {
-    // Ignore browser-level fullscreen exit failures.
-  });
-}
-
 function getReportRows() {
-  const resolved = resolveRoundUserId(lastRoundItems);
   const seen = new Set();
   const deleted = new Set(deletedReportLinks);
 
   return lastRoundItems
     .map(item => {
       const reviewLink = buildReplayPanoLink(item);
-      const playbackUserId = item.userId || (resolved.conflict ? "" : resolved.userId) || "";
-      const playbackLink = buildReplayPlayerLink(item, playbackUserId);
 
       return {
         gameId: item.gameId,
         round: item.round,
         reviewLink,
-        playbackLink,
         displayText: getDisplayLinkText(reviewLink),
         reason: reportReasons[reviewLink] || "",
       };
@@ -497,7 +459,6 @@ function renderReportRows() {
   rows.forEach(row => {
     const tableRow = document.createElement("tr");
     tableRow.className = "report-row";
-    tableRow.classList.toggle("is-active", row.reviewLink === activeReportLink);
 
     const deleteCell = document.createElement("td");
     deleteCell.className = "report-delete-cell";
@@ -518,10 +479,8 @@ function renderReportRows() {
     link.href = row.reviewLink;
     link.title = row.reviewLink;
     link.textContent = row.displayText;
-    link.addEventListener("click", event => {
-      event.preventDefault();
-      selectReportRow(row);
-    });
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
     linkCell.appendChild(link);
 
     const reasonCell = document.createElement("td");
@@ -549,74 +508,13 @@ function renderReportRows() {
   });
 }
 
-function setEmbeddedFrames(row) {
-  reviewFrame.src = row.reviewLink;
-  reviewFrame.hidden = false;
-  reviewFrameEmpty.hidden = true;
-
-  if (reviewFrameLabel) {
-    reviewFrameLabel.textContent = `第${row.round}轮`;
-  }
-
-  playbackFrame.src = row.playbackLink;
-  playbackFrame.hidden = false;
-  playbackFrameEmpty.hidden = true;
-
-  if (playbackFrameLabel) {
-    playbackFrameLabel.textContent = `第${row.round}轮`;
-  }
-}
-
-function clearEmbeddedFrames() {
-  reviewFrame.removeAttribute("src");
-  reviewFrame.hidden = true;
-  reviewFrameEmpty.hidden = false;
-
-  if (reviewFrameLabel) {
-    reviewFrameLabel.textContent = "未选择";
-  }
-
-  playbackFrame.removeAttribute("src");
-  playbackFrame.hidden = true;
-  playbackFrameEmpty.hidden = false;
-
-  if (playbackFrameLabel) {
-    playbackFrameLabel.textContent = "未选择";
-  }
-}
-
-function selectReportRow(row) {
-  activeReportLink = row.reviewLink;
-  setEmbeddedFrames(row);
-  renderReportRows();
-  saveState();
-}
-
-function restoreReportFrameSelection() {
-  const selectedRow = getReportRows().find(row => row.reviewLink === activeReportLink);
-
-  if (selectedRow) {
-    setEmbeddedFrames(selectedRow);
-    return;
-  }
-
-  activeReportLink = "";
-  clearEmbeddedFrames();
-}
-
 function syncReportWorkspace() {
-  restoreReportFrameSelection();
   renderReportRows();
 }
 
 function deleteReportRow(reviewLink) {
   if (!deletedReportLinks.includes(reviewLink)) {
     deletedReportLinks.push(reviewLink);
-  }
-
-  if (activeReportLink === reviewLink) {
-    activeReportLink = "";
-    clearEmbeddedFrames();
   }
 
   renderReportRows();
@@ -777,16 +675,17 @@ convertBtn.addEventListener("click", convertLinks);
 toggleRoundFormatBtn.addEventListener("click", toggleRoundFormat);
 converterViewBtn.addEventListener("click", () => {
   setActiveView("converter");
-  exitReviewFullscreen();
 });
 
 reviewViewBtn.addEventListener("click", () => {
   setActiveView("review");
-  requestReviewFullscreen();
 });
 
-reviewColumnResizer.addEventListener("pointerdown", startReportColumnResize);
-reviewColumnResizer.addEventListener("keydown", handleReportColumnKeydown);
+copyReportBtn.addEventListener("click", () => {
+  copyText(getReportExportText());
+});
+
+exportReportBtn.addEventListener("click", exportReportText);
 
 function closeHelpDialog() {
   helpDialog.hidden = true;
@@ -811,7 +710,6 @@ function clearAll() {
   lastRoundItems = [];
   roundOutputFormat = "replay-pano";
   reportReasons = {};
-  activeReportLink = "";
   setOutputLinks(roundOutput, []);
   setInvalidOutput([]);
   updateRoundPanelHeading();
@@ -852,7 +750,6 @@ if (!loadState()) {
   setOutputLinks(roundOutput, []);
   setInvalidOutput([]);
   updateRoundPanelHeading();
-  applyReportColumnWidth();
   syncReportWorkspace();
   setActiveView("converter", false);
 }
