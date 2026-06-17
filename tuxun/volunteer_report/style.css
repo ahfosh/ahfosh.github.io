@@ -50,24 +50,12 @@ textarea {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 0;
-}
-
-.page-header > div {
-  min-width: 0;
 }
 
 .page-header h1 {
   margin: 0 0 6px;
   font-size: clamp(22px, 2.7vw, 32px);
   line-height: 1.2;
-}
-
-.page-header p {
-  max-width: 680px;
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.45;
 }
 
 .header-actions {
@@ -128,18 +116,15 @@ textarea {
   margin-bottom: clamp(8px, 1.2dvh, 12px);
 }
 
-.preset-user {
-  margin-bottom: 8px;
-}
-
 .preset-user-controls {
   display: grid;
   min-width: 0;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
+  margin-bottom: 8px;
 }
 
-.preset-user input {
+.preset-user-controls input {
   width: 100%;
   min-height: 40px;
   border: 1px solid var(--border);
@@ -151,7 +136,7 @@ textarea {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.preset-user input:focus {
+.preset-user-controls input:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.14);
 }
@@ -271,11 +256,8 @@ textarea:focus {
   overflow-wrap: anywhere;
 }
 
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 10px;
+.convert-button {
+  align-self: flex-end;
   margin-top: clamp(10px, 1.6dvh, 14px);
 }
 
@@ -409,7 +391,6 @@ button:active {
 }
 
 .report-table-wrap {
-  position: relative;
   min-height: 0;
   overflow-x: auto;
   border: 1px solid var(--border);
@@ -421,7 +402,6 @@ button:active {
   width: 100%;
   min-width: 720px;
   border-collapse: collapse;
-  table-layout: auto;
 }
 
 .report-table th,
@@ -451,8 +431,6 @@ button:active {
   color: var(--primary);
   font-size: 16px;
   line-height: 1.45;
-  overflow: visible;
-  text-overflow: clip;
   white-space: nowrap;
   text-decoration: none;
 }
@@ -474,7 +452,6 @@ button:active {
 }
 
 .report-reason-cell {
-  width: auto;
   min-width: 300px;
 }
 
@@ -546,7 +523,6 @@ button:active {
 @media (max-width: 640px) {
   .app-shell {
     width: calc(100vw - 16px);
-    max-width: 1180px;
     padding: 8px 0;
     gap: 8px;
   }
@@ -567,16 +543,8 @@ button:active {
     gap: 6px;
   }
 
-  .page-header p {
-    display: none;
-  }
-
   .output-grid {
     grid-template-columns: 1fr;
-  }
-
-  .preset-user-controls {
-    grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .input-panel,

@@ -20,11 +20,9 @@
 
     <section class="workspace" aria-label="链接转换工作区">
       <div class="input-panel">
-        <div class="preset-user">
-          <div class="preset-user-controls">
-            <input id="preset-user-id" type="text" inputmode="numeric" placeholder="预设 userId" />
-            <button id="confirm-user-id-btn" type="button">确认</button>
-          </div>
+        <div class="preset-user-controls">
+          <input id="preset-user-id" type="text" inputmode="numeric" placeholder="预设 userId" />
+          <button id="confirm-user-id-btn" type="button">确认</button>
         </div>
 
         <div class="panel-heading">
@@ -36,9 +34,7 @@
 https://tuxun.fun/replay?gameId=1920613e-60fc-469d-98f2-0c9f0d24213b&round=1
 https://tuxun.fun/replayplayer?gameId=1920613e-60fc-469d-98f2-0c9f0d24213b&round=1&userId=USER_ID
 https://tuxun.fun/solo/1920613e-60fc-469d-98f2-0c9f0d24213b" spellcheck="false"></textarea>
-        <div class="actions">
-          <button id="convert-btn" type="button">转换</button>
-        </div>
+        <button id="convert-btn" class="convert-button" type="button">转换</button>
       </div>
 
       <div class="output-grid">
@@ -53,7 +49,7 @@ https://tuxun.fun/solo/1920613e-60fc-469d-98f2-0c9f0d24213b" spellcheck="false">
             </div>
           </div>
           <div class="report-table-wrap">
-            <table id="report-table" class="report-table">
+            <table class="report-table">
               <thead>
                 <tr>
                   <th class="report-delete-cell" scope="col"></th>
@@ -73,7 +69,7 @@ https://tuxun.fun/solo/1920613e-60fc-469d-98f2-0c9f0d24213b" spellcheck="false">
         <section class="output-panel" aria-labelledby="invalid-title">
           <div class="panel-heading">
             <h2 id="invalid-title">非法</h2>
-            <button class="text-button" data-copy-target="invalid-output" type="button">复制</button>
+            <button id="copy-invalid-btn" class="text-button" type="button">复制</button>
           </div>
           <div id="invalid-output" class="link-list" aria-live="polite"></div>
         </section>
@@ -96,7 +92,7 @@ https://tuxun.fun/solo/1920613e-60fc-469d-98f2-0c9f0d24213b" spellcheck="false">
     <div class="confirm-panel help-panel" role="dialog" aria-modal="true" aria-labelledby="help-title">
       <h2 id="help-title">使用说明</h2>
       <p>本工具用于把图寻各类链接转换成举报处理所需的标准格式。</p>
-      <p>接受的格式包括：replay / replayplayer / replay-pano。
+      <p>接受的格式包括：replay / replayplayer / replay-pano。</p>
       <ol class="help-steps">
         <li>可以预设userId，填入上方输入框，点击“确认”。链接中包含userId时选填。</li>
         <li>把可疑轮次的链接粘贴到“原始链接”框里，每行一个。</li>

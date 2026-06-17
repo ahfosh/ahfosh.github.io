@@ -7,6 +7,7 @@ const reportLinkTitle = document.getElementById("report-link-title");
 const reportTableBody = document.getElementById("report-table-body");
 const reportRowCount = document.getElementById("report-row-count");
 const copyReportBtn = document.getElementById("copy-report-btn");
+const copyInvalidBtn = document.getElementById("copy-invalid-btn");
 const exportReportBtn = document.getElementById("export-report-btn");
 const toggleRoundFormatBtn = document.getElementById("toggle-round-format-btn");
 const helpBtn = document.getElementById("help-btn");
@@ -86,8 +87,7 @@ function loadState() {
       : [];
     setInvalidOutput(Array.isArray(state.invalidEntries) ? state.invalidEntries : []);
     updateLinkCount();
-    updateReportPanelHeading();
-    renderReportRows();
+    renderReportPanel();
     return true;
   } catch (error) {
     return false;
@@ -101,15 +101,16 @@ function extractLinks(text) {
     .filter(Boolean);
 }
 
-function uniqueInOrder(items) {
+function uniqueInOrder(items, getKey = item => item) {
   const seen = new Set();
 
   return items.filter(item => {
-    if (seen.has(item)) {
+    const key = getKey(item);
+    if (seen.has(key)) {
       return false;
     }
 
-    seen.add(item);
+    seen.add(key);
     return true;
   });
 }
@@ -133,14 +134,6 @@ function updateLinkCount(count = getUniqueSourceLinks().links.length) {
   linkCount.textContent = `${count}条链接`;
 }
 
-function isTuxunUrl(url) {
-  return url.origin === TUXUN_ORIGIN;
-}
-
-function isValidGameId(gameId) {
-  return Boolean(gameId && UUID_REGEX.test(gameId));
-}
-
 function classifyLink(rawLink) {
   let url;
 
@@ -150,7 +143,7 @@ function classifyLink(rawLink) {
     return { valid: false, reason: "链接无效" };
   }
 
-  if (!isTuxunUrl(url)) {
+  if (url.origin !== TUXUN_ORIGIN) {
     return { valid: false, reason: "域名错误" };
   }
 
@@ -168,7 +161,7 @@ function classifyLink(rawLink) {
       return { valid: false, reason: "缺少参数gameId" };
     }
 
-    if (!isValidGameId(gameId)) {
+    if (!UUID_REGEX.test(gameId)) {
       return { valid: false, reason: "gameId非法" };
     }
 
@@ -179,7 +172,6 @@ function classifyLink(rawLink) {
     return {
       valid: true,
       item: {
-        type: "round",
         gameId,
         round,
         userId: url.searchParams.get("userId") || url.searchParams.get("chooseUser"),
@@ -190,18 +182,7 @@ function classifyLink(rawLink) {
   return { valid: false, reason: "路径错误" };
 }
 
-function buildReplayPanoLink(item) {
-  const params = new URLSearchParams();
-  params.set("gameId", item.gameId);
-
-  if (item.round) {
-    params.set("round", item.round);
-  }
-
-  return `${TUXUN_ORIGIN}/replay-pano?${params.toString()}`;
-}
-
-function buildReplayPlayerLink(item, userId) {
+function buildReplayLink(path, item, userId = "") {
   const params = new URLSearchParams();
   params.set("gameId", item.gameId);
 
@@ -213,7 +194,7 @@ function buildReplayPlayerLink(item, userId) {
     params.set("round", item.round);
   }
 
-  return `${TUXUN_ORIGIN}/replayplayer?${params.toString()}`;
+  return `${TUXUN_ORIGIN}/${path}?${params.toString()}`;
 }
 
 function canOpenAsLink(value) {
@@ -250,14 +231,14 @@ function getDisplayLinkText(link) {
   return link.startsWith(tuxunPrefix) ? link.slice(tuxunPrefix.length) : link;
 }
 
-function renderInvalidLinkList(container, entries) {
-  container.textContent = "";
+function renderInvalidLinkList(entries) {
+  invalidOutput.textContent = "";
 
   if (entries.length === 0) {
     const empty = document.createElement("p");
     empty.className = "empty-state";
     empty.textContent = "暂无链接";
-    container.appendChild(empty);
+    invalidOutput.appendChild(empty);
     return;
   }
 
@@ -277,10 +258,6 @@ function renderInvalidLinkList(container, entries) {
       anchor.title = entry.link;
       anchor.target = "_blank";
       anchor.rel = "noopener noreferrer";
-      anchor.addEventListener("click", event => {
-        event.preventDefault();
-        window.open(entry.link, "_blank", "noopener,noreferrer");
-      });
       row.appendChild(anchor);
     } else {
       const plainLink = document.createElement("span");
@@ -289,30 +266,13 @@ function renderInvalidLinkList(container, entries) {
       row.appendChild(plainLink);
     }
 
-    container.appendChild(row);
+    invalidOutput.appendChild(row);
   });
 }
 
 function setInvalidOutput(entries) {
-  const seen = new Set();
-  invalidEntries = entries.filter(entry => {
-    const key = `${entry.link}\0${entry.reason}`;
-    if (seen.has(key)) {
-      return false;
-    }
-
-    seen.add(key);
-    return true;
-  });
-  renderInvalidLinkList(invalidOutput, invalidEntries);
-}
-
-function getOutputText(id) {
-  if (id === "invalid-output") {
-    return invalidEntries.map(entry => entry.link).join("\n");
-  }
-
-  return "";
+  invalidEntries = uniqueInOrder(entries, entry => `${entry.link}\0${entry.reason}`);
+  renderInvalidLinkList(invalidEntries);
 }
 
 function setStatus(message, type = "info") {
@@ -344,14 +304,12 @@ function getReportRows() {
 
   return lastRoundItems
     .map(item => {
-      const reportKey = buildReplayPanoLink(item);
+      const reportKey = buildReplayLink("replay-pano", item);
       const reportLink = roundOutputFormat === "replayplayer"
-        ? buildReplayPlayerLink(item, item.userId || sharedUserId)
+        ? buildReplayLink("replayplayer", item, item.userId || sharedUserId)
         : reportKey;
 
       return {
-        gameId: item.gameId,
-        round: item.round,
         reportKey,
         reportLink,
         displayText: getDisplayLinkText(reportLink),
@@ -376,9 +334,7 @@ function renderReportRows() {
   const rows = getReportRows();
   reportTableBody.textContent = "";
 
-  if (reportRowCount) {
-    reportRowCount.textContent = `${rows.length}条链接`;
-  }
+  reportRowCount.textContent = `${rows.length}条链接`;
 
   if (rows.length === 0) {
     const emptyRow = document.createElement("tr");
@@ -455,7 +411,7 @@ function deleteReportRow(reportKey) {
 
 function getReportExportText() {
   return getReportRows()
-    .map(row => `${row.reportLink}，${reportReasons[row.reportKey] || ""}`)
+    .map(row => `${row.reportLink}，${row.reason}`)
     .join("\n");
 }
 
@@ -484,6 +440,11 @@ function updateReportPanelHeading() {
   const hasRoundLinks = lastRoundItems.length > 0;
   toggleRoundFormatBtn.hidden = !hasRoundLinks;
   toggleRoundFormatBtn.textContent = roundOutputFormat === "replay-pano" ? "replayplayer" : "replay-pano";
+}
+
+function renderReportPanel() {
+  updateReportPanelHeading();
+  renderReportRows();
 }
 
 function buildConvertCompleteMessage(roundCount, removedCount, invalidCount) {
@@ -523,8 +484,7 @@ function convertLinks() {
   roundOutputFormat = "replay-pano";
   setInvalidOutput(invalid);
 
-  updateReportPanelHeading();
-  renderReportRows();
+  renderReportPanel();
 
   setStatus(
     buildConvertCompleteMessage(
@@ -561,8 +521,7 @@ function toggleRoundFormat() {
     roundOutputFormat = "replay-pano";
   }
 
-  updateReportPanelHeading();
-  renderReportRows();
+  renderReportPanel();
   saveState();
 }
 
@@ -605,7 +564,19 @@ copyReportBtn.addEventListener("click", () => {
   copyText(getReportExportText());
 });
 
+copyInvalidBtn.addEventListener("click", () => {
+  copyText(invalidEntries.map(entry => entry.link).join("\n"));
+});
+
 exportReportBtn.addEventListener("click", exportReportText);
+
+function closeOnBackdrop(dialog, closeDialog) {
+  dialog.addEventListener("click", event => {
+    if (event.target === dialog) {
+      closeDialog();
+    }
+  });
+}
 
 function closeHelpDialog() {
   helpDialog.hidden = true;
@@ -617,11 +588,7 @@ helpBtn.addEventListener("click", () => {
 
 closeHelpBtn.addEventListener("click", closeHelpDialog);
 
-helpDialog.addEventListener("click", event => {
-  if (event.target === helpDialog) {
-    closeHelpDialog();
-  }
-});
+closeOnBackdrop(helpDialog, closeHelpDialog);
 
 function clearAll() {
   sourceLinks.value = "";
@@ -633,8 +600,7 @@ function clearAll() {
   reportReasons = {};
   deletedReportLinks = [];
   setInvalidOutput([]);
-  updateReportPanelHeading();
-  renderReportRows();
+  renderReportPanel();
   updateLinkCount(0);
   setStatus("");
   saveState();
@@ -655,24 +621,13 @@ confirmClearBtn.addEventListener("click", () => {
   closeClearConfirm();
 });
 
-clearConfirm.addEventListener("click", event => {
-  if (event.target === clearConfirm) {
-    closeClearConfirm();
-  }
-});
+closeOnBackdrop(clearConfirm, closeClearConfirm);
 
 window.addEventListener("resize", resizeSourceLinks);
 
-document.querySelectorAll("[data-copy-target]").forEach(button => {
-  button.addEventListener("click", () => {
-    copyText(getOutputText(button.dataset.copyTarget));
-  });
-});
-
 if (!loadState()) {
   setInvalidOutput([]);
-  updateReportPanelHeading();
-  renderReportRows();
+  renderReportPanel();
 }
 
 resizeSourceLinks();
