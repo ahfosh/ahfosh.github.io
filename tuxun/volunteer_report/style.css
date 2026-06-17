@@ -547,6 +547,16 @@ button:active {
     grid-template-columns: 1fr;
   }
 
+  .report-panel .panel-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .report-panel .panel-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
   .input-panel,
   .output-panel {
     padding: var(--space-sm);
