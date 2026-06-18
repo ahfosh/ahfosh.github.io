@@ -429,11 +429,14 @@ button:focus-visible {
   display: grid;
   place-items: center;
   padding: var(--space-3xl);
+  overflow-y: auto;
   background: var(--overlay);
+  -webkit-overflow-scrolling: touch;
 }
 
 .confirm-panel {
   width: min(360px, 100%);
+  max-height: calc(100dvh - (var(--space-3xl) * 2));
   padding: var(--space-4xl);
 }
 
@@ -450,6 +453,7 @@ button:focus-visible {
 
 .help-panel {
   width: min(520px, 100%);
+  overflow-y: auto;
 }
 
 .records-panel {
@@ -773,6 +777,16 @@ button:focus-visible {
   button {
     min-height: 36px;
     padding: 0 var(--space-lg);
+  }
+
+  .confirm-overlay {
+    align-items: start;
+    padding: var(--space-sm);
+  }
+
+  .confirm-panel {
+    max-height: calc(100dvh - (var(--space-sm) * 2));
+    padding: var(--space-xl);
   }
 
   .link-list a,

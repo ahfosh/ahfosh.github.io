@@ -921,6 +921,9 @@ function setHelpConfirmedCookie() {
 
 function updateHelpCloseVisibility() {
   closeHelpBtn.hidden = !helpConfirmCheck.checked;
+  if (helpConfirmCheck.checked) {
+    closeHelpBtn.scrollIntoView({ block: "nearest" });
+  }
 }
 
 function openHelpDialog() {
