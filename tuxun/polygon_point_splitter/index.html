@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多边形点分割工具 | Polygon Point Splitter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap');
+        
+        :root {
+            --primary: #4f46e5;
+        }
+        
+        body {
+            font-family: 'Inter', 'Noto Sans SC', system-ui, -apple-system, sans-serif;
+        }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+        }
+        
+        .upload-zone {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .upload-zone.dragover {
+            background-color: #f0f9ff;
+            border-color: #4f46e5;
+            transform: scale(1.01);
+        }
+        
+        .section-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .result-table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        
+        .result-table th {
+            background: linear-gradient(to right, #f8fafc, #f1e7ff);
+            font-weight: 600;
+            color: #334155;
+        }
+        
+        .stat-card {
+            transition: transform 0.2s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .polygon-badge {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: white;
+            font-size: 0.75rem;
+            padding: 0.125rem 0.5rem;
+            border-radius: 9999px;
+            font-weight: 600;
+        }
+        
+        .nav-active {
+            background: linear-gradient(to right, #4f46e5, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+        
+        .metric-value {
+            font-variant-numeric: tabular-nums;
+        }
+        
+        .file-info {
+            animation: fadeInUp 0.4s ease forwards;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .custom-shadow {
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+        }
+        
+        .data-table {
+            font-size: 0.875rem;
+        }
+        
+        .mono {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+    <!-- Header -->
+    <header class="border-b border-slate-200 bg-white sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-5">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-x-4">
+                    <div class="w-11 h-11 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl flex items-center justify-center shadow-inner">
+                        <i class="fa-solid fa-map-marked text-white text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold tracking-tight">多边形点分割工具</h1>
+                        <p class="text-sm text-slate-500 -mt-1">Polygon Point Splitter</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-x-3 text-sm">
+                    <div class="px-3 py-1.5 bg-slate-100 rounded-2xl flex items-center gap-x-2 text-slate-600">
+                        <i class="fa-solid fa-globe fa-fw"></i>
+                        <span class="font-medium">纯浏览器运行 · 无需后端</span>
+                    </div>
+                    <button onclick="showHelpModal()" 
+                            class="flex items-center gap-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors rounded-2xl text-sm font-medium">
+                        <i class="fa-solid fa-question-circle"></i>
+                        <span>使用说明</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-6 pt-8 pb-12">
+        
+        <!-- Intro -->
+        <div class="max-w-3xl mb-8">
+            <div class="flex items-center gap-x-3 mb-3">
+                <span class="inline-flex items-center px-3 py-1 rounded-2xl text-xs font-semibold bg-indigo-100 text-indigo-700">
+                    <i class="fa-solid fa-magic mr-1.5"></i>
+                    智能空间分析
+                </span>
+            </div>
+            <h2 class="text-4xl font-bold tracking-tighter leading-none mb-3">将点数据按地理多边形自动分割</h2>
+            <p class="text-lg text-slate-600">
+                上传包含多个多边形的 GeoJSON 和包含大量点的 JSON 文件，系统将自动判断每个点所属的多边形，
+                生成独立的子 JSON 文件并打包为 ZIP 一键下载。支持中国行政区划等复杂边界。
+            </p>
+            <div class="flex items-center gap-x-4 mt-4 text-sm">
+                <div class="flex items-center text-emerald-600">
+                    <i class="fa-solid fa-check-circle mr-2"></i>
+                    <span class="font-medium">射线投射算法</span>
+                </div>
+                <div class="flex items-center text-emerald-600">
+                    <i class="fa-solid fa-check-circle mr-2"></i>
+                    <span class="font-medium">支持带孔多边形</span>
+                </div>
+                <div class="flex items-center text-emerald-600">
+                    <i class="fa-solid fa-check-circle mr-2"></i>
+                    <span class="font-medium">10万+ 点秒级处理</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            
+            <!-- GeoJSON Upload -->
+            <div class="section-card bg-white border border-slate-200 rounded-3xl p-6 custom-shadow">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-x-3">
+                        <div class="w-9 h-9 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center">
+                            <i class="fa-solid fa-draw-polygon text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-xl">上传 GeoJSON</h3>
+                            <p class="text-xs text-slate-500">包含多个 Polygon / MultiPolygon 的 FeatureCollection</p>
+                        </div>
+                    </div>
+                    <span id="geo-status" 
+                          class="px-3 py-1 text-xs font-semibold rounded-2xl bg-slate-100 text-slate-500 hidden">已就绪</span>
+                </div>
+                
+                <div id="geo-upload-zone"
+                     class="upload-zone border-2 border-dashed border-slate-300 hover:border-emerald-400 rounded-2xl p-8 text-center cursor-pointer bg-slate-50/50">
+                    <input type="file" id="geo-file-input" accept=".json,.geojson" class="hidden">
+                    <div class="flex flex-col items-center">
+                        <i class="fa-solid fa-cloud-upload-alt text-4xl text-emerald-400 mb-3"></i>
+                        <p class="font-semibold text-slate-700">拖拽 GeoJSON 文件到此处</p>
+                        <p class="text-sm text-slate-500 mt-1">或点击选择文件</p>
+                        <div class="mt-3 text-xs px-4 py-1 bg-white rounded-xl border border-slate-200 text-slate-500">
+                            支持 FeatureCollection · 多个多边形
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="geo-file-info" class="hidden mt-4 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl file-info">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-x-2">
+                                <i class="fa-solid fa-file-code text-emerald-600"></i>
+                                <span id="geo-filename" class="font-semibold text-emerald-900 truncate"></span>
+                            </div>
+                            <div class="mt-1 flex items-center gap-x-3 text-xs">
+                                <span id="geo-poly-count" class="font-mono px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-lg"></span>
+                                <span id="geo-file-size" class="text-emerald-600"></span>
+                            </div>
+                        </div>
+                        <button onclick="clearGeoJSON()" 
+                                class="text-emerald-500 hover:text-red-500 p-1 transition-colors">
+                            <i class="fa-solid fa-times fa-lg"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Points JSON Upload -->
+            <div class="section-card bg-white border border-slate-200 rounded-3xl p-6 custom-shadow">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-x-3">
+                        <div class="w-9 h-9 bg-violet-100 text-violet-600 rounded-2xl flex items-center justify-center">
+                            <i class="fa-solid fa-map-pin text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-xl">上传点数据 JSON</h3>
+                            <p class="text-xs text-slate-500">包含 customCoordinates 或点数组（需有 lat/lng）</p>
+                        </div>
+                    </div>
+                    <span id="points-status" 
+                          class="px-3 py-1 text-xs font-semibold rounded-2xl bg-slate-100 text-slate-500 hidden">已就绪</span>
+                </div>
+                
+                <div id="points-upload-zone"
+                     class="upload-zone border-2 border-dashed border-slate-300 hover:border-violet-400 rounded-2xl p-8 text-center cursor-pointer bg-slate-50/50">
+                    <input type="file" id="points-file-input" accept=".json" class="hidden">
+                    <div class="flex flex-col items-center">
+                        <i class="fa-solid fa-cloud-upload-alt text-4xl text-violet-400 mb-3"></i>
+                        <p class="font-semibold text-slate-700">拖拽点数据 JSON 文件到此处</p>
+                        <p class="text-sm text-slate-500 mt-1">或点击选择文件</p>
+                        <div class="mt-3 text-xs px-4 py-1 bg-white rounded-xl border border-slate-200 text-slate-500">
+                            支持 10,000+ 点 · 自定义格式
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="points-file-info" class="hidden mt-4 p-4 bg-violet-50 border border-violet-100 rounded-2xl file-info">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-x-2">
+                                <i class="fa-solid fa-file-lines text-violet-600"></i>
+                                <span id="points-filename" class="font-semibold text-violet-900 truncate"></span>
+                            </div>
+                            <div class="mt-1 flex items-center gap-x-3 text-xs">
+                                <span id="points-count" class="font-mono px-2 py-0.5 bg-violet-100 text-violet-700 rounded-lg"></span>
+                                <span id="points-file-size" class="text-violet-600"></span>
+                            </div>
+                        </div>
+                        <button onclick="clearPoints()" 
+                                class="text-violet-500 hover:text-red-500 p-1 transition-colors">
+                            <i class="fa-solid fa-times fa-lg"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuration -->
+        <div id="config-section" class="hidden section-card bg-white border border-slate-200 rounded-3xl p-6 mb-8 custom-shadow">
+            <div class="flex items-center gap-x-3 mb-5">
+                <i class="fa-solid fa-cog text-slate-400"></i>
+                <h3 class="font-semibold text-xl">处理配置</h3>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <!-- Property selector -->
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">子文件命名属性</label>
+                    <select id="property-select" 
+                            class="w-full px-4 py-3 border border-slate-300 rounded-2xl text-sm focus:outline-none focus:border-indigo-500 bg-white">
+                        <option value="">自动选择（推荐：name:en → name → ref）</option>
+                    </select>
+                    <p class="mt-1.5 text-xs text-slate-500">用于生成子 JSON 文件名（如 Jiangxi.json 或 江西省.json）</p>
+                </div>
+                
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
+                        <div class="flex items-center gap-x-3">
+                            <i class="fa-solid fa-exclamation-triangle text-amber-500"></i>
+                            <div>
+                                <div class="font-medium text-sm">保存未匹配点</div>
+                                <div class="text-xs text-slate-500">生成 unmatched.json</div>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="include-unmatched" checked class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-0 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                        </label>
+                    </div>
+                    
+                    <div class="text-xs px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl text-slate-600">
+                        <i class="fa-solid fa-info-circle mr-1.5 text-indigo-400"></i>
+                        点若同时位于多个多边形内，将分配给 GeoJSON 中<strong>第一个匹配</strong>的多边形
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div id="action-section" class="hidden flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+            <button onclick="processData()"
+                    class="flex-1 sm:flex-none px-10 py-4 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 transition-all text-white font-semibold rounded-3xl shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-x-3 text-lg">
+                <i class="fa-solid fa-magic"></i>
+                <span>开始分割处理</span>
+            </button>
+            
+            <button onclick="clearAll()"
+                    class="px-8 py-4 border border-slate-300 hover:bg-slate-100 transition-colors font-medium rounded-3xl flex items-center gap-x-2 text-slate-600">
+                <i class="fa-solid fa-undo"></i>
+                <span>清除全部</span>
+            </button>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results-section" class="hidden">
+            <div class="flex items-center justify-between mb-4 px-1">
+                <div>
+                    <h3 class="font-bold text-2xl flex items-center gap-x-3">
+                        <span>处理结果</span>
+                        <span id="results-badge" 
+                              class="inline-flex items-center px-3 py-1 text-xs font-bold bg-emerald-100 text-emerald-700 rounded-2xl">已完成</span>
+                    </h3>
+                    <p class="text-sm text-slate-500 mt-0.5">所有点已按所属多边形成功分割</p>
+                </div>
+                
+                <button onclick="downloadZIP()"
+                        class="px-8 py-3.5 bg-emerald-600 hover:bg-emerald-700 transition-all text-white font-semibold rounded-3xl flex items-center gap-x-3 shadow-lg shadow-emerald-500/30">
+                    <i class="fa-solid fa-download"></i>
+                    <span>下载 ZIP 文件</span>
+                </button>
+            </div>
+            
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="stat-card bg-white border border-slate-200 rounded-3xl p-5">
+                    <div class="text-xs uppercase tracking-widest text-slate-500 font-semibold">总点数</div>
+                    <div id="stat-total" class="text-4xl font-bold metric-value mt-1 text-slate-900">0</div>
+                </div>
+                <div class="stat-card bg-white border border-emerald-200 rounded-3xl p-5">
+                    <div class="text-xs uppercase tracking-widest text-emerald-600 font-semibold">已匹配</div>
+                    <div id="stat-matched" class="text-4xl font-bold metric-value mt-1 text-emerald-600">0</div>
+                </div>
+                <div class="stat-card bg-white border border-amber-200 rounded-3xl p-5">
+                    <div class="text-xs uppercase tracking-widest text-amber-600 font-semibold">未匹配</div>
+                    <div id="stat-unmatched" class="text-4xl font-bold metric-value mt-1 text-amber-600">0</div>
+                </div>
+                <div class="stat-card bg-white border border-slate-200 rounded-3xl p-5">
+                    <div class="text-xs uppercase tracking-widest text-slate-500 font-semibold">多边形数量</div>
+                    <div id="stat-polygons" class="text-4xl font-bold metric-value mt-1 text-slate-900">0</div>
+                </div>
+            </div>
+            
+            <!-- Detailed Table -->
+            <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden custom-shadow">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex items-center">
+                    <span class="font-semibold">分割详情</span>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full data-table">
+                        <thead>
+                            <tr class="border-b border-slate-100">
+                                <th class="text-left px-6 py-4 font-semibold text-xs text-slate-500 w-12">#</th>
+                                <th class="text-left px-6 py-4 font-semibold text-xs text-slate-500">多边形名称</th>
+                                <th class="text-center px-6 py-4 font-semibold text-xs text-slate-500 w-28">点数量</th>
+                                <th class="text-left px-6 py-4 font-semibold text-xs text-slate-500">生成文件名</th>
+                                <th class="text-center px-6 py-4 font-semibold text-xs text-slate-500 w-20">状态</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-table-body" class="divide-y divide-slate-100 text-sm">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="mt-4 text-xs text-center text-slate-500 flex items-center justify-center gap-x-2">
+                <i class="fa-solid fa-info-circle"></i>
+                <span>ZIP 内包含每个多边形对应的独立 JSON 文件（保持原始数据结构）</span>
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- Help Modal -->
+    <div id="help-modal" onclick="hideHelpModal()" class="hidden fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-6">
+        <div onclick="event.stopImmediatePropagation()" class="bg-white rounded-3xl max-w-2xl w-full p-8 shadow-2xl">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h3 class="text-2xl font-bold">使用说明</h3>
+                    <p class="text-slate-500">快速上手指南</p>
+                </div>
+                <button onclick="hideHelpModal()" class="text-3xl leading-none text-slate-400 hover:text-slate-600">&times;</button>
+            </div>
+            
+            <div class="space-y-6 text-sm">
+                <div>
+                    <div class="font-semibold flex items-center gap-x-2 mb-2"><i class="fa-solid fa-upload text-emerald-500"></i> <span>1. 上传文件</span></div>
+                    <ul class="list-disc pl-6 space-y-1 text-slate-600">
+                        <li>GeoJSON：必须是 FeatureCollection，包含多个 <code class="mono bg-slate-100 px-1">Polygon</code> 或 <code class="mono bg-slate-100 px-1">MultiPolygon</code> 要素</li>
+                        <li>点数据 JSON：支持 <code class="mono bg-slate-100 px-1">{"customCoordinates": [...]}</code> 结构，或普通数组。每个点需包含 <code class="mono bg-slate-100 px-1">lat</code> / <code class="mono bg-slate-100 px-1">lng</code> 字段</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <div class="font-semibold flex items-center gap-x-2 mb-2"><i class="fa-solid fa-cogs text-violet-500"></i> <span>2. 配置与处理</span></div>
+                    <p class="text-slate-600">选择用于文件命名的属性（推荐 <strong>name:en</strong> 获取英文名）。未匹配的点可单独保存。</p>
+                </div>
+                
+                <div>
+                    <div class="font-semibold flex items-center gap-x-2 mb-2"><i class="fa-solid fa-download text-emerald-500"></i> <span>3. 下载结果</span></div>
+                    <p class="text-slate-600">处理完成后点击「下载 ZIP」，得到按多边形分割的多个 JSON 文件。</p>
+                </div>
+                
+                <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs">
+                    <strong class="text-amber-700">提示：</strong> 
+                    示例数据（中国省级边界 GeoJSON + 10,000 个百度全景点）已提供在对话附件中，可直接用于测试。
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center text-xs text-slate-400 py-8 border-t border-slate-100">
+        纯前端实现 · 射线投射点在多边形算法 · 支持中国行政区划等复杂边界 · Made for geospatial data processing
+    </footer>
+
+    <script>
+        // Tailwind script
+        function initializeTailwind() {
+            document.documentElement.style.setProperty('--accent', '#4f46e5');
+        }
+        
+        // Global variables
+        let geojsonData = null;
+        let pointsData = null;
+        let polygonsList = [];
+        let matchedResults = {};
+        let unmatchedPoints = [];
+        let resultFiles = [];
+        let pointsStructureType = 'unknown';
+        
+        // Initialize everything
+        function initializeApp() {
+            initializeTailwind();
+            setupDragAndDrop();
+            setupFileInputs();
+            
+            // Keyboard support
+            document.addEventListener('keydown', function(e) {
+                if (e.key === '?' && document.activeElement.tagName === 'BODY') {
+                    e.preventDefault();
+                    showHelpModal();
+                }
+            });
+            
+            console.log('%c[PolygonPointSplitter] App initialized successfully', 'color:#64748b');
+        }
+        
+        function setupDragAndDrop() {
+            // GeoJSON zone
+            const geoZone = document.getElementById('geo-upload-zone');
+            const geoInput = document.getElementById('geo-file-input');
+            
+            geoZone.addEventListener('click', () => geoInput.click());
+            geoZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                geoZone.classList.add('dragover', 'border-emerald-400');
+            });
+            geoZone.addEventListener('dragleave', () => {
+                geoZone.classList.remove('dragover', 'border-emerald-400');
+            });
+            geoZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                geoZone.classList.remove('dragover', 'border-emerald-400');
+                if (e.dataTransfer.files.length > 0) {
+                    handleGeoJSONFile(e.dataTransfer.files[0]);
+                }
+            });
+            
+            // Points zone
+            const pointsZone = document.getElementById('points-upload-zone');
+            const pointsInput = document.getElementById('points-file-input');
+            
+            pointsZone.addEventListener('click', () => pointsInput.click());
+            pointsZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                pointsZone.classList.add('dragover', 'border-violet-400');
+            });
+            pointsZone.addEventListener('dragleave', () => {
+                pointsZone.classList.remove('dragover', 'border-violet-400');
+            });
+            pointsZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                pointsZone.classList.remove('dragover', 'border-violet-400');
+                if (e.dataTransfer.files.length > 0) {
+                    handlePointsFile(e.dataTransfer.files[0]);
+                }
+            });
+        }
+        
+        function setupFileInputs() {
+            const geoInput = document.getElementById('geo-file-input');
+            geoInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleGeoJSONFile(e.target.files[0]);
+                }
+            });
+            
+            const pointsInput = document.getElementById('points-file-input');
+            pointsInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handlePointsFile(e.target.files[0]);
+                }
+            });
+        }
+        
+        // Handle GeoJSON file
+        function handleGeoJSONFile(file) {
+            if (!file.name.toLowerCase().endsWith('.json') && !file.name.toLowerCase().endsWith('.geojson')) {
+                showToast('请上传 .json 或 .geojson 文件', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                try {
+                    const data = JSON.parse(ev.target.result);
+                    
+                    if (!data.type || data.type !== 'FeatureCollection' || !Array.isArray(data.features)) {
+                        showToast('GeoJSON 格式不正确：需要 FeatureCollection 类型', 'error');
+                        return;
+                    }
+                    
+                    geojsonData = data;
+                    
+                    // Extract polygons
+                    polygonsList = [];
+                    let polygonCount = 0;
+                    
+                    data.features.forEach((feature, fIndex) => {
+                        if (!feature.geometry) return;
+                        
+                        const geomType = feature.geometry.type;
+                        const props = feature.properties || {};
+                        
+                        if (geomType === 'Polygon') {
+                            polygonsList.push({
+                                index: polygonsList.length,
+                                featureIndex: fIndex,
+                                properties: props,
+                                coordinates: feature.geometry.coordinates
+                            });
+                            polygonCount++;
+                        } else if (geomType === 'MultiPolygon') {
+                            feature.geometry.coordinates.forEach((polyCoords, pIndex) => {
+                                const newProps = {...props};
+                                newProps._multiPart = pIndex;
+                                polygonsList.push({
+                                    index: polygonsList.length,
+                                    featureIndex: fIndex,
+                                    properties: newProps,
+                                    coordinates: polyCoords
+                                });
+                                polygonCount++;
+                            });
+                        }
+                    });
+                    
+                    if (polygonsList.length === 0) {
+                        showToast('未在 GeoJSON 中找到任何 Polygon 或 MultiPolygon', 'error');
+                        return;
+                    }
+                    
+                    // Update UI
+                    document.getElementById('geo-filename').textContent = file.name;
+                    document.getElementById('geo-poly-count').innerHTML = `<i class="fa-solid fa-shapes mr-1"></i>${polygonsList.length} 个多边形`;
+                    document.getElementById('geo-file-size').textContent = formatFileSize(file.size);
+                    
+                    document.getElementById('geo-file-info').classList.remove('hidden');
+                    document.getElementById('geo-upload-zone').classList.add('hidden');
+                    document.getElementById('geo-status').classList.remove('hidden');
+                    document.getElementById('geo-status').textContent = '已加载';
+                    document.getElementById('geo-status').className = 'px-3 py-1 text-xs font-semibold rounded-2xl bg-emerald-100 text-emerald-700';
+                    
+                    // Populate property selector
+                    populatePropertySelect();
+                    
+                    // Show config if both ready
+                    checkBothFilesReady();
+                    
+                    showToast(`成功加载 ${polygonsList.length} 个多边形`, 'success');
+                    
+                } catch (err) {
+                    console.error(err);
+                    showToast('GeoJSON 解析失败：文件可能损坏或格式错误', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        // Handle Points file
+        function handlePointsFile(file) {
+            if (!file.name.toLowerCase().endsWith('.json')) {
+                showToast('请上传 .json 文件', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                try {
+                    const data = JSON.parse(ev.target.result);
+                    pointsData = data;
+                    
+                    // Detect structure
+                    let pointArray = [];
+                    
+                    if (data.customCoordinates && Array.isArray(data.customCoordinates)) {
+                        pointArray = data.customCoordinates;
+                        pointsStructureType = 'customCoordinates';
+                    } else if (Array.isArray(data)) {
+                        pointArray = data;
+                        pointsStructureType = 'array';
+                    } else if (data.features && Array.isArray(data.features)) {
+                        // GeoJSON points? convert
+                        pointArray = data.features.map(f => f.properties || f.geometry || {});
+                        pointsStructureType = 'geojson-points';
+                    } else {
+                        // Try to find any array
+                        const possibleArrays = Object.values(data).filter(v => Array.isArray(v));
+                        if (possibleArrays.length > 0) {
+                            pointArray = possibleArrays[0];
+                            pointsStructureType = 'detected-array';
+                        } else {
+                            showToast('无法识别点数据结构：需要 customCoordinates 数组或普通点数组', 'error');
+                            return;
+                        }
+                    }
+                    
+                    // Validate points have coordinates
+                    let validPoints = 0;
+                    pointArray.forEach(p => {
+                        if (getLatLngFromPoint(p)) validPoints++;
+                    });
+                    
+                    if (validPoints === 0) {
+                        showToast('点数据中未找到有效的 lat/lng 坐标', 'error');
+                        return;
+                    }
+                    
+                    // Update UI
+                    document.getElementById('points-filename').textContent = file.name;
+                    document.getElementById('points-count').innerHTML = `<i class="fa-solid fa-map-pin mr-1"></i>${pointArray.length} 个点 (${validPoints} 有效)`;
+                    document.getElementById('points-file-size').textContent = formatFileSize(file.size);
+                    
+                    document.getElementById('points-file-info').classList.remove('hidden');
+                    document.getElementById('points-upload-zone').classList.add('hidden');
+                    document.getElementById('points-status').classList.remove('hidden');
+                    document.getElementById('points-status').textContent = '已加载';
+                    document.getElementById('points-status').className = 'px-3 py-1 text-xs font-semibold rounded-2xl bg-violet-100 text-violet-700';
+                    
+                    checkBothFilesReady();
+                    
+                    showToast(`成功加载 ${pointArray.length} 个点`, 'success');
+                    
+                } catch (err) {
+                    console.error(err);
+                    showToast('点数据 JSON 解析失败', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function getLatLngFromPoint(point) {
+            if (!point) return null;
+            if (point.lat != null && point.lng != null) {
+                return { lat: parseFloat(point.lat), lng: parseFloat(point.lng) };
+            }
+            if (point.latitude != null && point.longitude != null) {
+                return { lat: parseFloat(point.latitude), lng: parseFloat(point.longitude) };
+            }
+            if (point.y != null && point.x != null) {
+                return { lat: parseFloat(point.y), lng: parseFloat(point.x) };
+            }
+            return null;
+        }
+        
+        function populatePropertySelect() {
+            const select = document.getElementById('property-select');
+            select.innerHTML = '<option value="">自动选择（推荐：name:en → name → ref）</option>';
+            
+            const keySet = new Set();
+            
+            polygonsList.forEach(poly => {
+                Object.keys(poly.properties).forEach(key => {
+                    const val = poly.properties[key];
+                    if (val != null && (typeof val === 'string' || typeof val === 'number')) {
+                        keySet.add(key);
+                    }
+                });
+            });
+            
+            // Sort keys nicely
+            const sortedKeys = Array.from(keySet).sort((a, b) => {
+                // Prioritize common naming fields
+                const priority = ['name:en', 'name', 'ref', 'ISO3166-2', 'short_name', 'official_name'];
+                const pa = priority.indexOf(a);
+                const pb = priority.indexOf(b);
+                if (pa !== -1 && pb !== -1) return pa - pb;
+                if (pa !== -1) return -1;
+                if (pb !== -1) return 1;
+                return a.localeCompare(b);
+            });
+            
+            sortedKeys.forEach(key => {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = key;
+                
+                // Highlight recommended
+                if (key === 'name:en' || key === 'name') {
+                    option.textContent += ' ★ 推荐';
+                }
+                select.appendChild(option);
+            });
+            
+            // Auto select best
+            if (sortedKeys.includes('name:en')) {
+                select.value = 'name:en';
+            } else if (sortedKeys.includes('name')) {
+                select.value = 'name';
+            } else if (sortedKeys.includes('ref')) {
+                select.value = 'ref';
+            }
+        }
+        
+        function checkBothFilesReady() {
+            const configSection = document.getElementById('config-section');
+            const actionSection = document.getElementById('action-section');
+            
+            if (geojsonData && pointsData && polygonsList.length > 0) {
+                configSection.classList.remove('hidden');
+                actionSection.classList.remove('hidden');
+            }
+        }
+        
+        // Core point in polygon with hole support
+        function isPointInRing(lng, lat, ring) {
+            if (!ring || ring.length < 3) return false;
+            
+            let inside = false;
+            const n = ring.length;
+            let p1x = ring[0][0], p1y = ring[0][1];
+            
+            for (let i = 1; i <= n; i++) {
+                const p2x = ring[i % n][0];
+                const p2y = ring[i % n][1];
+                
+                if (lat > Math.min(p1y, p2y)) {
+                    if (lat <= Math.max(p1y, p2y)) {
+                        if (lng <= Math.max(p1x, p2x)) {
+                            if (p1y !== p2y) {
+                                const xinters = (lat - p1y) * (p2x - p1x) / (p2y - p1y) + p1x;
+                                if (p1x === p2x || lng <= xinters) {
+                                    inside = !inside;
+                                }
+                            }
+                        }
+                    }
+                }
+                p1x = p2x;
+                p1y = p2y;
+            }
+            return inside;
+        }
+        
+        function isPointInPolygon(lng, lat, coordinates) {
+            if (!coordinates || coordinates.length === 0) return false;
+            
+            // Outer ring
+            if (!isPointInRing(lng, lat, coordinates[0])) {
+                return false;
+            }
+            
+            // Check holes (inner rings)
+            for (let i = 1; i < coordinates.length; i++) {
+                if (isPointInRing(lng, lat, coordinates[i])) {
+                    return false; // point is inside a hole
+                }
+            }
+            
+            return true;
+        }
+        
+        // Main processing function
+        async function processData() {
+            if (!geojsonData || !pointsData || polygonsList.length === 0) {
+                showToast('请先上传 GeoJSON 和点数据文件', 'error');
+                return;
+            }
+            
+            const processBtn = event.currentTarget;
+            const originalText = processBtn ? processBtn.innerHTML : '';
+            
+            // Show loading state
+            const actionSection = document.getElementById('action-section');
+            actionSection.innerHTML = `
+                <div class="flex items-center justify-center gap-x-3 text-lg text-indigo-600 font-medium py-4">
+                    <i class="fa-solid fa-spinner fa-spin fa-lg"></i>
+                    <span>正在处理 ${polygonsList.length} 个多边形与点数据...</span>
+                </div>
+            `;
+            
+            // Small delay to allow UI update
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            try {
+                // Get points array
+                let pointsArray = [];
+                if (pointsStructureType === 'customCoordinates') {
+                    pointsArray = pointsData.customCoordinates || [];
+                } else if (pointsStructureType === 'array') {
+                    pointsArray = pointsData;
+                } else if (pointsStructureType === 'geojson-points') {
+                    pointsArray = pointsData.features || [];
+                } else {
+                    // fallback
+                    const possible = Object.values(pointsData).find(v => Array.isArray(v));
+                    pointsArray = possible || [];
+                }
+                
+                // Reset results
+                matchedResults = {};
+                unmatchedPoints = [];
+                polygonsList.forEach(poly => {
+                    matchedResults[poly.index] = [];
+                });
+                
+                const selectedKey = document.getElementById('property-select').value;
+                const includeUnmatched = document.getElementById('include-unmatched').checked;
+                
+                let processedCount = 0;
+                const totalPoints = pointsArray.length;
+                
+                // Process each point
+                for (let i = 0; i < pointsArray.length; i++) {
+                    const point = pointsArray[i];
+                    const ll = getLatLngFromPoint(point);
+                    
+                    if (!ll) {
+                        unmatchedPoints.push(point);
+                        continue;
+                    }
+                    
+                    let assigned = false;
+                    
+                    // Check against polygons in order
+                    for (let poly of polygonsList) {
+                        if (isPointInPolygon(ll.lng, ll.lat, poly.coordinates)) {
+                            matchedResults[poly.index].push(point);
+                            assigned = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!assigned) {
+                        unmatchedPoints.push(point);
+                    }
+                    
+                    processedCount++;
+                    
+                    // Occasional UI update for very large sets
+                    if (processedCount % 2000 === 0) {
+                        await new Promise(resolve => setTimeout(resolve, 0));
+                    }
+                }
+                
+                // Prepare result files
+                resultFiles = [];
+                
+                polygonsList.forEach((poly) => {
+                    const polyName = getPolygonFileName(poly, selectedKey);
+                    const matchedPoints = matchedResults[poly.index] || [];
+                    
+                    let fileContent;
+                    
+                    if (pointsStructureType === 'customCoordinates') {
+                        fileContent = {
+                            customCoordinates: matchedPoints,
+                            _meta: {
+                                polygon: poly.properties,
+                                pointCount: matchedPoints.length,
+                                source: "split_by_polygon"
+                            }
+                        };
+                    } else if (pointsStructureType === 'array') {
+                        fileContent = matchedPoints;
+                    } else {
+                        fileContent = {
+                            points: matchedPoints,
+                            _meta: {
+                                polygon: poly.properties,
+                                pointCount: matchedPoints.length
+                            }
+                        };
+                    }
+                    
+                    resultFiles.push({
+                        name: `${polyName}.json`,
+                        content: JSON.stringify(fileContent, null, 2),
+                        count: matchedPoints.length,
+                        polygonName: polyName,
+                        properties: poly.properties
+                    });
+                });
+                
+                // Add unmatched if requested and has any
+                if (includeUnmatched && unmatchedPoints.length > 0) {
+                    let unmatchedContent;
+                    if (pointsStructureType === 'customCoordinates') {
+                        unmatchedContent = {
+                            customCoordinates: unmatchedPoints,
+                            _meta: {
+                                note: "Points that did not fall into any polygon",
+                                pointCount: unmatchedPoints.length
+                            }
+                        };
+                    } else if (pointsStructureType === 'array') {
+                        unmatchedContent = unmatchedPoints;
+                    } else {
+                        unmatchedContent = {
+                            points: unmatchedPoints,
+                            _meta: { note: "Unmatched points" }
+                        };
+                    }
+                    
+                    resultFiles.push({
+                        name: 'unmatched.json',
+                        content: JSON.stringify(unmatchedContent, null, 2),
+                        count: unmatchedPoints.length,
+                        polygonName: '未匹配点',
+                        isUnmatched: true
+                    });
+                }
+                
+                // Show results
+                showResultsUI(pointsArray.length);
+                
+                showToast(`处理完成！共分割出 ${resultFiles.length} 个文件`, 'success');
+                
+            } catch (error) {
+                console.error('Processing error:', error);
+                showToast('处理过程中发生错误: ' + error.message, 'error');
+                
+                // Restore button
+                actionSection.innerHTML = `
+                    <button onclick="processData()" class="flex-1 sm:flex-none px-10 py-4 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 transition-all text-white font-semibold rounded-3xl shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-x-3 text-lg">
+                        <i class="fa-solid fa-magic"></i>
+                        <span>重新尝试处理</span>
+                    </button>
+                    <button onclick="clearAll()" class="px-8 py-4 border border-slate-300 hover:bg-slate-100 transition-colors font-medium rounded-3xl flex items-center gap-x-2 text-slate-600">
+                        <i class="fa-solid fa-undo"></i>
+                        <span>清除全部</span>
+                    </button>
+                `;
+            }
+        }
+        
+        function getPolygonFileName(poly, selectedKey) {
+            let name = '';
+            
+            if (selectedKey && poly.properties[selectedKey] != null) {
+                name = poly.properties[selectedKey];
+            } else if (poly.properties['name:en']) {
+                name = poly.properties['name:en'];
+            } else if (poly.properties.name) {
+                name = poly.properties.name;
+            } else if (poly.properties.ref) {
+                name = poly.properties.ref;
+            } else if (poly.properties['@id']) {
+                name = poly.properties['@id'].split('/').pop();
+            } else {
+                name = `polygon_${poly.index}`;
+            }
+            
+            // Add part suffix for MultiPolygon parts
+            if (poly.properties._multiPart != null) {
+                name += `_part${poly.properties._multiPart + 1}`;
+            }
+            
+            // Sanitize for filename
+            name = String(name)
+                .replace(/[\/\\:*?"<>|]/g, '_')
+                .replace(/\s+/g, '_')
+                .replace(/_{2,}/g, '_')
+                .trim();
+            
+            if (!name || name === 'null' || name === 'undefined') {
+                name = `polygon_${poly.index}`;
+            }
+            
+            // Limit length
+            if (name.length > 80) name = name.substring(0, 77) + '...';
+            
+            return name;
+        }
+        
+        function showResultsUI(totalPoints) {
+            // Hide action section
+            document.getElementById('action-section').classList.add('hidden');
+            document.getElementById('config-section').classList.add('hidden');
+            
+            // Show results
+            const resultsSection = document.getElementById('results-section');
+            resultsSection.classList.remove('hidden');
+            
+            // Calculate stats
+            let matchedTotal = 0;
+            resultFiles.forEach(f => {
+                if (!f.isUnmatched) matchedTotal += f.count;
+            });
+            const unmatchedTotal = unmatchedPoints.length;
+            
+            // Update stats
+            document.getElementById('stat-total').textContent = totalPoints.toLocaleString();
+            document.getElementById('stat-matched').textContent = matchedTotal.toLocaleString();
+            document.getElementById('stat-unmatched').textContent = unmatchedTotal.toLocaleString();
+            document.getElementById('stat-polygons').textContent = polygonsList.length;
+            
+            // Build table
+            const tbody = document.getElementById('results-table-body');
+            tbody.innerHTML = '';
+            
+            resultFiles.forEach((file, idx) => {
+                const row = document.createElement('tr');
+                row.className = file.isUnmatched ? 'bg-amber-50/50' : 'hover:bg-slate-50';
+                
+                const statusHTML = file.isUnmatched 
+                    ? `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">未匹配</span>`
+                    : `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">已分配</span>`;
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 text-slate-400 font-mono text-xs">${idx + 1}</td>
+                    <td class="px-6 py-4">
+                        <div class="font-semibold text-slate-800">${file.polygonName}</div>
+                        ${file.properties && file.properties.name ? 
+                            `<div class="text-xs text-slate-500 mt-0.5">${file.properties.name}</div>` : ''}
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="inline-flex items-center justify-center min-w-[3.5rem] px-3 py-1 rounded-2xl text-sm font-mono font-semibold ${file.count > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}">
+                            ${file.count.toLocaleString()}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="font-mono text-xs text-slate-600 bg-slate-100 px-3 py-1 rounded-xl inline-block">${file.name}</div>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        ${statusHTML}
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+            
+            // If no unmatched but checkbox was on, still show note
+            if (unmatchedTotal === 0) {
+                const noteRow = document.createElement('tr');
+                noteRow.innerHTML = `
+                    <td colspan="5" class="px-6 py-4 text-center text-xs text-emerald-600 bg-emerald-50">
+                        <i class="fa-solid fa-check-circle mr-2"></i> 所有点均已成功匹配到多边形
+                    </td>
+                `;
+                tbody.appendChild(noteRow);
+            }
+        }
+        
+        // Create and download ZIP
+        async function downloadZIP() {
+            if (resultFiles.length === 0) {
+                showToast('没有可下载的文件', 'error');
+                return;
+            }
+            
+            const btns = document.querySelectorAll('#results-section button');
+            const originalTexts = [];
+            btns.forEach((btn, i) => {
+                originalTexts[i] = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> 正在生成 ZIP...`;
+            });
+            
+            try {
+                const zip = new JSZip();
+                
+                // Add a README
+                let readme = `多边形点分割结果\n`;
+                readme += `生成时间: ${new Date().toLocaleString('zh-CN')}\n`;
+                readme += `多边形数量: ${polygonsList.length}\n`;
+                readme += `总点数: ${document.getElementById('stat-total').textContent}\n`;
+                readme += `已匹配: ${document.getElementById('stat-matched').textContent}\n`;
+                readme += `未匹配: ${document.getElementById('stat-unmatched').textContent}\n\n`;
+                readme += `文件列表:\n`;
+                
+                resultFiles.forEach(f => {
+                    zip.file(f.name, f.content);
+                    readme += `- ${f.name} (${f.count} 个点)\n`;
+                });
+                
+                zip.file('README.txt', readme);
+                
+                const blob = await zip.generateAsync({ 
+                    type: "blob",
+                    compression: "DEFLATE",
+                    compressionOptions: { level: 6 }
+                });
+                
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `split_by_polygon_${new Date().toISOString().slice(0,10)}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showToast('ZIP 文件已成功生成并开始下载', 'success');
+                
+            } catch (err) {
+                console.error(err);
+                showToast('生成 ZIP 时出错: ' + err.message, 'error');
+            } finally {
+                btns.forEach((btn, i) => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalTexts[i];
+                });
+            }
+        }
+        
+        // Utility functions
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+        
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-6 right-6 px-6 py-3.5 rounded-2xl shadow-2xl flex items-center gap-x-3 text-sm font-medium z-[200] ${type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`;
+            toast.innerHTML = `
+                <i class="fa-solid ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} fa-lg"></i>
+                <span>${message}</span>
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.transition = 'all 0.3s ease';
+                toast.style.opacity = '0';
+                setTimeout(() => toast.parentNode.removeChild(toast), 300);
+            }, 3200);
+        }
+        
+        function showHelpModal() {
+            document.getElementById('help-modal').classList.remove('hidden');
+            document.getElementById('help-modal').classList.add('flex');
+        }
+        
+        function hideHelpModal() {
+            const modal = document.getElementById('help-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+        
+        function clearGeoJSON() {
+            geojsonData = null;
+            polygonsList = [];
+            document.getElementById('geo-file-info').classList.add('hidden');
+            document.getElementById('geo-upload-zone').classList.remove('hidden');
+            document.getElementById('geo-status').classList.add('hidden');
+            document.getElementById('property-select').innerHTML = '<option value="">自动选择（推荐：name:en → name → ref）</option>';
+            
+            if (!pointsData) {
+                document.getElementById('config-section').classList.add('hidden');
+                document.getElementById('action-section').classList.add('hidden');
+            }
+            
+            // If results showing, hide them
+            document.getElementById('results-section').classList.add('hidden');
+        }
+        
+        function clearPoints() {
+            pointsData = null;
+            pointsStructureType = 'unknown';
+            document.getElementById('points-file-info').classList.add('hidden');
+            document.getElementById('points-upload-zone').classList.remove('hidden');
+            document.getElementById('points-status').classList.add('hidden');
+            
+            if (!geojsonData) {
+                document.getElementById('config-section').classList.add('hidden');
+                document.getElementById('action-section').classList.add('hidden');
+            }
+            
+            document.getElementById('results-section').classList.add('hidden');
+        }
+        
+        function clearAll() {
+            clearGeoJSON();
+            clearPoints();
+            
+            // Reset results
+            matchedResults = {};
+            unmatchedPoints = [];
+            resultFiles = [];
+            
+            document.getElementById('results-section').classList.add('hidden');
+            document.getElementById('config-section').classList.add('hidden');
+            document.getElementById('action-section').classList.add('hidden');
+            
+            // Restore original action buttons if needed
+            const actionSection = document.getElementById('action-section');
+            if (actionSection.classList.contains('hidden')) {
+                actionSection.innerHTML = `
+                    <button onclick="processData()" class="flex-1 sm:flex-none px-10 py-4 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 transition-all text-white font-semibold rounded-3xl shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-x-3 text-lg">
+                        <i class="fa-solid fa-magic"></i>
+                        <span>开始分割处理</span>
+                    </button>
+                    <button onclick="clearAll()" class="px-8 py-4 border border-slate-300 hover:bg-slate-100 transition-colors font-medium rounded-3xl flex items-center gap-x-2 text-slate-600">
+                        <i class="fa-solid fa-undo"></i>
+                        <span>清除全部</span>
+                    </button>
+                `;
+            }
+            
+            showToast('已清除所有数据', 'success');
+        }
+        
+        // Boot app
+        window.onload = function() {
+            initializeApp();
+            
+            // Easter egg / tip
+            setTimeout(() => {
+                const geoZone = document.getElementById('geo-upload-zone');
+                if (geoZone && !geojsonData) {
+                    geoZone.title = '提示：可直接拖拽示例 GeoJSON 文件测试';
+                }
+            }, 1500);
+        };
+        
+        // Expose for debugging
+        window.PolygonPointSplitter = { clearAll, processData };
+    </script>
+</body>
+</html>
