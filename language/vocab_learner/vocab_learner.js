@@ -248,7 +248,7 @@ function requestExportConfirmation({ filled, total, isComplete }) {
 
         const percent = total > 0 ? Math.round((filled / total) * 100) : 0;
         const message = isComplete
-            ? '所有词汇释义已填写完毕。是否继续导出文件？'
+            ? '所有词汇释义已填写完毕。'
             : `尚有 ${total - filled} 个词汇未填写释义。是否继续导出文件？`;
 
         document.getElementById('export-message').textContent = message;
