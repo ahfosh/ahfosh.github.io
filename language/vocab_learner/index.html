@@ -73,16 +73,6 @@
                     </div>
 
                     <div class="page-toolbar">
-                        <button id="exam-mode-btn" type="button" class="btn btn-outline btn-exam-mode" aria-pressed="false" title="开启后强制全屏，并禁止复制、翻译、切屏、截图和悬浮窗">
-                            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z" />
-                            </svg>
-                            <span class="btn-label-full">考试模式</span>
-                            <span class="btn-label-short">考试</span>
-                        </button>
-
-                        <div id="exam-timer-badge" class="exam-timer-badge hidden"></div>
-
                         <div id="stats" class="stats-badge hidden"></div>
 
                         <button id="export-btn" type="button" class="btn btn-success">
@@ -146,56 +136,6 @@
                 <button type="button" class="btn btn-outline" data-export-dismiss>取消</button>
                 <button type="button" id="export-confirm-btn" class="btn btn-success">导出</button>
             </div>
-        </div>
-    </div>
-
-    <div id="exam-setup-modal" class="verify-modal hidden" role="dialog" aria-modal="true" aria-labelledby="exam-setup-title">
-        <div class="verify-modal-backdrop" data-exam-setup-dismiss></div>
-        <div class="verify-modal-panel">
-            <h2 id="exam-setup-title" class="verify-title">开启考试模式</h2>
-            <p class="verify-message">开启后将强制全屏，并禁止复制、翻译、切屏、截图和悬浮窗。可选择考试时长，时间结束后自动锁定。</p>
-            <label class="exam-timer-toggle">
-                <input type="checkbox" id="exam-timer-enabled">
-                <span>设置考试时长</span>
-            </label>
-            <div id="exam-timer-fields" class="exam-timer-fields hidden">
-                <div class="exam-timer-row">
-                    <input type="number" id="exam-timer-hours" class="exam-timer-input" min="0" max="24" value="0" inputmode="numeric">
-                    <span class="exam-timer-unit">时</span>
-                    <input type="number" id="exam-timer-minutes" class="exam-timer-input" min="0" max="59" value="30" inputmode="numeric">
-                    <span class="exam-timer-unit">分</span>
-                </div>
-            </div>
-            <p id="exam-setup-error" class="exam-password-error hidden">请设置大于 0 的考试时长</p>
-            <div class="verify-actions">
-                <button type="button" class="btn btn-outline" data-exam-setup-dismiss>取消</button>
-                <button type="button" id="exam-setup-confirm-btn" class="btn btn-exam-mode">开启</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="exam-password-modal" class="verify-modal hidden" role="dialog" aria-modal="true" aria-labelledby="exam-password-title">
-        <div class="verify-modal-backdrop" data-exam-password-dismiss></div>
-        <div class="verify-modal-panel">
-            <h2 id="exam-password-title" class="verify-title">关闭考试模式</h2>
-            <p class="verify-message">请输入密码以关闭考试模式</p>
-            <input type="password" id="exam-password-input" class="exam-password-input" placeholder="密码" autocomplete="off" spellcheck="false">
-            <p id="exam-password-error" class="exam-password-error hidden">密码错误，请重试</p>
-            <div class="verify-actions">
-                <button type="button" class="btn btn-outline" data-exam-password-dismiss>取消</button>
-                <button type="button" id="exam-password-confirm-btn" class="btn btn-danger">确认</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="exam-shield" class="exam-shield hidden" aria-hidden="true">
-        <div class="exam-shield-panel">
-            <svg class="exam-shield-icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z" />
-            </svg>
-            <h2 class="exam-shield-title">考试保护已启用</h2>
-            <p id="exam-shield-message" class="exam-shield-message"></p>
-            <button type="button" id="exam-shield-restore-btn" class="btn btn-exam-mode">恢复考试</button>
         </div>
     </div>
 

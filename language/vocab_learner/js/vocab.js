@@ -1,7 +1,6 @@
 import { ICON_CHECK } from './constants.js';
 import { state } from './state.js';
 import { escapeHtml } from './utils.js';
-import { applyExamLockUI, updateTranslationProtection } from './exam-mode.js';
 
 function setInputFilled(input, filled) {
     input.classList.toggle('filled', filled);
@@ -84,8 +83,6 @@ export function renderContent(mdText) {
     container.innerHTML = htmlParts.join('');
     attachInputListeners();
     loadMeaningsToInputs();
-    updateTranslationProtection();
-    applyExamLockUI();
     updateProgressUI();
 }
 

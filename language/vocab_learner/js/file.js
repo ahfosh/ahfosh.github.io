@@ -4,7 +4,6 @@ import { clearSession, saveSession } from './session.js';
 import { state } from './state.js';
 import { showToast } from './toast.js';
 import { getStorageKey } from './utils.js';
-import { updateExamModeUI } from './exam-mode.js';
 import { clearAllInputs, renderContent, updateProgressUI } from './vocab.js';
 
 export function loadDocument(fileName, content, showLoadedToast = true) {
@@ -18,7 +17,6 @@ export function loadDocument(fileName, content, showLoadedToast = true) {
     document.getElementById('file-name-display').textContent = fileName;
     document.getElementById('upload-screen').classList.add('hidden');
     document.getElementById('main-screen').classList.remove('hidden');
-    updateExamModeUI();
     renderContent(state.originalMD);
     saveSession();
 
@@ -125,5 +123,4 @@ export async function returnToUpload() {
     document.getElementById('main-screen').classList.add('hidden');
     document.getElementById('upload-screen').classList.remove('hidden');
     document.getElementById('rendered-content').innerHTML = '';
-    updateExamModeUI();
 }
