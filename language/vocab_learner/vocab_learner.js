@@ -77,7 +77,7 @@ function processParagraph(text) {
         const word = match[1].trim();
         const safeWord = escapeHtml(word);
 
-        result += `<span class="vocab-unit"><strong class="vocab-word">${safeWord}</strong><input type="text" class="vocab-input" data-word="${safeWord}" placeholder="中文释义" /></span>`;
+        result += `<strong class="vocab-word">${safeWord}</strong><input type="text" class="vocab-input" data-word="${safeWord}" placeholder="中文释义" />`;
 
         lastIndex = regex.lastIndex;
     }
@@ -99,7 +99,7 @@ function renderContent(mdText) {
 
         if (trimmed.startsWith('# ')) {
             const titleText = escapeHtml(trimmed.substring(2).trim());
-            htmlParts.push(`<h1>${titleText}</h1>`);
+            htmlParts.push(`<h1 class="text-3xl font-bold tracking-tighter mb-8 text-zinc-900 border-b border-zinc-100 pb-4">${titleText}</h1>`);
         } else {
             const processed = processParagraph(trimmed);
             htmlParts.push(`<p>${processed}</p>`);
