@@ -16,6 +16,9 @@ body {
     background: #f4f4f5;
     color: #18181b;
     -webkit-font-smoothing: antialiased;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
 }
 
 .hidden {
@@ -481,6 +484,9 @@ body {
     border-radius: 0.3125rem;
     background: #f8fafc;
     color: #1f2937;
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
     transition:
         border-color 0.2s ease,
         box-shadow 0.2s ease,

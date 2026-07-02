@@ -70,7 +70,7 @@ function processParagraph(text) {
         result += escapeHtml(text.substring(lastIndex, match.index));
         const word = match[1].trim();
         const safeWord = escapeHtml(word);
-        result += `<span class="vocab-unit"><strong class="vocab-word">${safeWord}</strong><input type="text" class="vocab-input" data-word="${safeWord}" placeholder="中文释义" /></span>`;
+        result += `<span class="vocab-unit notranslate" translate="no"><strong class="vocab-word">${safeWord}</strong><input type="text" class="vocab-input" data-word="${safeWord}" placeholder="中文释义" translate="no" /></span>`;
         lastIndex = regex.lastIndex;
     }
 
@@ -394,7 +394,48 @@ function setupDropZone() {
     });
 }
 
+function isEditableTarget(target) {
+    return target instanceof HTMLInputElement
+        || target instanceof HTMLTextAreaElement
+        || target.isContentEditable;
+}
+
+function setupCopyProtection() {
+    const blockCopy = (e) => e.preventDefault();
+
+    document.addEventListener('copy', blockCopy);
+    document.addEventListener('cut', (e) => {
+        if (!isEditableTarget(e.target)) {
+            e.preventDefault();
+        }
+    });
+    document.addEventListener('contextmenu', (e) => {
+        if (!isEditableTarget(e.target)) {
+            e.preventDefault();
+        }
+    });
+    document.addEventListener('selectstart', (e) => {
+        if (!isEditableTarget(e.target)) {
+            e.preventDefault();
+        }
+    });
+    document.addEventListener('keydown', (e) => {
+        if (!(e.ctrlKey || e.metaKey)) return;
+
+        const key = e.key.toLowerCase();
+        if (key === 'c') {
+            e.preventDefault();
+            return;
+        }
+
+        if (key === 'x' && !isEditableTarget(e.target)) {
+            e.preventDefault();
+        }
+    });
+}
+
 function initializeApp() {
+    setupCopyProtection();
     setupDropZone();
 
     document.getElementById('export-btn').addEventListener('click', exportAnnotated);
