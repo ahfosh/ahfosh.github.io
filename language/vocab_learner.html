@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>动态词汇学习器 | Markdown 词汇标注工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap');
+        
+        :root {
+            --primary: #2563eb;
+        }
+        
+        body {
+            font-family: 'Inter', 'Noto Sans SC', system-ui, -apple-system, sans-serif;
+        }
+        
+        .prose-custom p {
+            font-size: 15.5px;
+            line-height: 1.85;
+            margin-bottom: 1.75rem;
+            color: #374151;
+        }
+        
+        .vocab-word {
+            color: #1e40af;
+            font-weight: 700;
+            background: linear-gradient(to bottom, #dbeafe 0%, transparent 100%);
+            padding: 1px 5px;
+            border-radius: 4px;
+            box-shadow: 0 1px 2px rgba(30, 64, 175, 0.1);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .vocab-word:hover {
+            background: #bfdbfe;
+            transform: translateY(-1px);
+        }
+        
+        .vocab-input {
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 6px;
+            margin-right: 4px;
+            padding: 3px 10px;
+            font-size: 13.5px;
+            line-height: 1.3;
+            width: 118px;
+            height: 28px;
+            border: 1.5px solid #d1d5db;
+            border-radius: 6px;
+            background: #f8fafc;
+            color: #1f2937;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .vocab-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+            background: white;
+            width: 138px;
+        }
+        
+        .vocab-input.filled {
+            border-color: #16a34a;
+            background: #f0fdf4;
+            color: #166534;
+            font-weight: 500;
+        }
+        
+        .vocab-input::placeholder {
+            color: #9ca3af;
+            font-size: 12.5px;
+            font-weight: 400;
+        }
+        
+        .rendered-content {
+            max-width: 820px;
+            margin: 0 auto;
+        }
+        
+        .rendered-content p {
+            font-size: 15.2px;
+            line-height: 1.82;
+            margin-bottom: 1.65rem;
+            color: #374151;
+        }
+        
+        .drop-zone {
+            transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+        
+        .drop-zone.dragover {
+            background-color: #f0f9ff;
+            border-color: #3b82f6;
+            transform: scale(1.01);
+        }
+        
+        .section-header {
+            font-size: 13px;
+            letter-spacing: -.5px;
+            font-weight: 600;
+            color: #64748b;
+        }
+        
+        .toast {
+            animation: toast-pop-in 0.2s ease forwards;
+        }
+        
+        @keyframes toast-pop-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .story-container {
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+            border: 1px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body class="bg-zinc-100">
+    <!-- Upload Screen -->
+    <div id="upload-screen" class="min-h-screen flex items-center justify-center p-6">
+        <div class="w-full max-w-lg">
+            <!-- Logo & Header -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-3xl shadow-inner mb-4">
+                    <i class="fa-solid fa-book text-white text-4xl"></i>
+                </div>
+                <h1 class="text-4xl font-bold tracking-tighter text-zinc-900">动态词汇学习器</h1>
+                <p class="mt-3 text-lg text-zinc-600">上传 Markdown 文件，为加粗词汇添加中文释义</p>
+            </div>
+
+            <!-- Upload Card -->
+            <div class="bg-white rounded-3xl shadow-xl border border-zinc-200 p-8">
+                <div class="text-center mb-6">
+                    <div class="section-header mb-1.5">开始使用</div>
+                    <h2 class="text-2xl font-semibold tracking-tight">上传您的 Markdown 文件</h2>
+                    <p class="text-sm text-zinc-500 mt-1.5">文件中的 <strong class="text-blue-700">**加粗词汇**</strong> 将自动识别并添加输入框</p>
+                </div>
+
+                <!-- Drop Zone -->
+                <div id="drop-zone" 
+                     class="drop-zone border-2 border-dashed border-zinc-300 hover:border-blue-400 rounded-2xl p-9 text-center cursor-pointer bg-zinc-50 hover:bg-white">
+                    <div class="mx-auto w-12 h-12 bg-white rounded-2xl flex items-center justify-center border border-zinc-200 mb-4 shadow-sm">
+                        <i class="fa-solid fa-file-upload text-blue-500 text-3xl"></i>
+                    </div>
+                    <p class="font-semibold text-zinc-700">拖放 .md 文件到此处</p>
+                    <p class="text-xs text-zinc-500 mt-1">或点击下方按钮选择文件</p>
+                </div>
+
+                <div class="mt-5 flex flex-col sm:flex-row gap-3">
+                    <!-- File Input -->
+                    <label for="file-input" 
+                           class="flex-1 cursor-pointer inline-flex items-center justify-center gap-x-2 px-6 py-3.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition-colors text-white font-semibold rounded-2xl text-sm shadow-sm">
+                        <i class="fa-solid fa-folder-open"></i>
+                        <span>选择 Markdown 文件</span>
+                    </label>
+                    <input type="file" id="file-input" class="hidden" accept=".md,.markdown,text/markdown">
+                    
+                    <!-- Example Button -->
+                    <button id="example-btn"
+                            class="flex-1 inline-flex items-center justify-center gap-x-2 px-6 py-3.5 bg-white hover:bg-zinc-50 border border-zinc-300 text-zinc-700 font-semibold rounded-2xl text-sm transition-colors">
+                        <i class="fa-solid fa-magic"></i>
+                        <span>加载示例文章</span>
+                    </button>
+                </div>
+                
+                <div class="mt-6 text-[10px] text-center text-zinc-400">
+                    支持标准 Markdown 加粗语法（**词汇**） • 本地缓存自动保存
+                </div>
+            </div>
+            
+            <p class="text-center text-xs text-zinc-400 mt-6">所有数据仅保存在您的浏览器本地缓存中</p>
+        </div>
+    </div>
+
+    <!-- Main Screen -->
+    <div id="main-screen" class="hidden min-h-screen bg-zinc-100">
+        <!-- Top Navigation -->
+        <div class="sticky top-0 z-50 bg-white border-b border-zinc-200 shadow-sm">
+            <div class="max-w-[1080px] mx-auto px-6">
+                <div class="h-16 flex items-center justify-between">
+                    <div class="flex items-center gap-x-3.5">
+                        <div class="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center shadow-inner">
+                            <i class="fa-solid fa-book text-white text-2xl"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-2xl tracking-tighter text-zinc-900">动态词汇学习器</div>
+                            <div id="file-name-display" class="text-xs -mt-0.5 text-zinc-500 font-mono tracking-tight"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-x-2.5">
+                        <!-- Stats -->
+                        <div id="stats" 
+                             class="hidden md:flex items-center px-5 h-9 text-sm font-medium bg-zinc-100 border border-zinc-200 rounded-3xl text-zinc-600">
+                            <!-- JS populated -->
+                        </div>
+                        
+                        <!-- Export -->
+                        <button id="export-btn"
+                                class="inline-flex items-center gap-x-2 px-5 h-9 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 transition-all text-white text-sm font-semibold rounded-2xl shadow-sm">
+                            <i class="fa-solid fa-download"></i>
+                            <span class="hidden sm:inline">导出带释义 MD</span>
+                            <span class="sm:hidden">导出</span>
+                        </button>
+                        
+                        <!-- Clear -->
+                        <button id="clear-btn"
+                                class="inline-flex items-center gap-x-2 px-4 h-9 text-sm font-medium border border-zinc-300 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors rounded-2xl text-zinc-600">
+                            <i class="fa-solid fa-trash-can"></i>
+                            <span class="hidden sm:inline">清除释义</span>
+                        </button>
+                        
+                        <!-- Back -->
+                        <button id="back-btn"
+                                class="inline-flex items-center gap-x-2 px-4 h-9 text-sm font-medium border border-zinc-300 hover:bg-zinc-50 transition-colors rounded-2xl text-zinc-600">
+                            <i class="fa-solid fa-arrow-left"></i>
+                            <span class="hidden sm:inline">返回上传</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="max-w-[1080px] mx-auto px-6 pt-8 pb-20">
+            <!-- Info Bar -->
+            <div class="flex items-center justify-between mb-5 px-1">
+                <div>
+                    <div class="flex items-center gap-x-2">
+                        <span class="px-3 py-1 text-xs font-semibold bg-blue-100 text-blue-700 rounded-2xl">词汇学习模式</span>
+                        <span id="word-count-badge" class="text-xs text-zinc-500"></span>
+                    </div>
+                </div>
+                <div class="text-xs text-zinc-500 flex items-center gap-x-1.5">
+                    <i class="fa-solid fa-info-circle"></i>
+                    <span>输入框内容实时保存至本地缓存</span>
+                </div>
+            </div>
+
+            <!-- Rendered Story -->
+            <div class="story-container bg-white rounded-3xl p-9 md:p-11 border border-zinc-200">
+                <div id="rendered-content" class="rendered-content prose-custom">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+            
+            <div class="mt-6 text-center">
+                <p class="text-xs text-zinc-400">提示：点击输入框输入对应词汇的中文释义 • 相同词汇的释义会自动同步</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-[100] flex flex-col gap-y-2"></div>
+
+    <script>
+        // Tailwind script
+        function initializeTailwind() {
+            document.documentElement.style.setProperty('--accent', '#2563eb');
+        }
+        
+        // HTML escape
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+        
+        // Process a paragraph, replace **word** with <strong> + <input>
+        function processParagraph(text) {
+            let result = '';
+            let lastIndex = 0;
+            const regex = /\*\*([^*]+?)\*\*/g;
+            let match;
+            
+            while ((match = regex.exec(text)) !== null) {
+                // Add text before the match
+                result += escapeHtml(text.substring(lastIndex, match.index));
+                
+                // The vocabulary word
+                const word = match[1].trim();
+                const safeWord = escapeHtml(word);
+                
+                // Add strong + input
+                result += `<strong class="vocab-word">${safeWord}</strong><input type="text" class="vocab-input" data-word="${safeWord}" placeholder="中文释义" />`;
+                
+                lastIndex = regex.lastIndex;
+            }
+            
+            // Add remaining text
+            result += escapeHtml(text.substring(lastIndex));
+            return result;
+        }
+        
+        // Render the full markdown content
+        function renderContent(mdText) {
+            const container = document.getElementById('rendered-content');
+            container.innerHTML = '';
+            
+            const lines = mdText.trim().split('\n');
+            let htmlParts = [];
+            
+            for (let line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed) continue;
+                
+                if (trimmed.startsWith('# ')) {
+                    const titleText = escapeHtml(trimmed.substring(2).trim());
+                    htmlParts.push(`<h1 class="text-3xl font-bold tracking-tighter mb-8 text-zinc-900 border-b border-zinc-100 pb-4">${titleText}</h1>`);
+                } else {
+                    const processed = processParagraph(trimmed);
+                    htmlParts.push(`<p>${processed}</p>`);
+                }
+            }
+            
+            container.innerHTML = htmlParts.join('');
+            
+            // Attach listeners and load data
+            attachInputListeners();
+            loadMeaningsToInputs();
+            updateStats();
+            updateWordCountBadge();
+        }
+        
+        // Attach input event listeners (with sync for duplicate words)
+        function attachInputListeners() {
+            const inputs = document.querySelectorAll('.vocab-input');
+            
+            inputs.forEach(input => {
+                // Set initial filled state
+                if (input.value.trim()) {
+                    input.classList.add('filled');
+                }
+                
+                // Input handler with debounce for performance
+                let debounceTimer;
+                input.addEventListener('input', () => {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(() => {
+                        const word = input.dataset.word;
+                        const value = input.value.trim();
+                        
+                        // Update meanings object
+                        if (!window.meanings) window.meanings = {};
+                        window.meanings[word] = value;
+                        
+                        // Save to localStorage
+                        if (window.storageKey) {
+                            localStorage.setItem(window.storageKey, JSON.stringify(window.meanings));
+                        }
+                        
+                        // Sync all other inputs with same word
+                        document.querySelectorAll(`.vocab-input[data-word="${word}"]`).forEach(otherInput => {
+                            if (otherInput !== input) {
+                                otherInput.value = value;
+                                if (value) {
+                                    otherInput.classList.add('filled');
+                                } else {
+                                    otherInput.classList.remove('filled');
+                                }
+                            }
+                        });
+                        
+                        // Toggle filled class on current
+                        if (value) {
+                            input.classList.add('filled');
+                        } else {
+                            input.classList.remove('filled');
+                        }
+                        
+                        // Update stats
+                        updateStats();
+                        
+                        // Optional subtle feedback (only if significant change)
+                        if (value.length > 0 && value.length % 3 === 0) {
+                            showToast('已保存', true);
+                        }
+                    }, 180);
+                });
+                
+                // Also save on blur
+                input.addEventListener('blur', () => {
+                    const word = input.dataset.word;
+                    const value = input.value.trim();
+                    if (window.meanings && window.storageKey) {
+                        window.meanings[word] = value;
+                        localStorage.setItem(window.storageKey, JSON.stringify(window.meanings));
+                    }
+                });
+            });
+        }
+        
+        // Load saved meanings into inputs
+        function loadMeaningsToInputs() {
+            if (!window.meanings) window.meanings = {};
+            
+            const inputs = document.querySelectorAll('.vocab-input');
+            inputs.forEach(input => {
+                const word = input.dataset.word;
+                if (window.meanings[word]) {
+                    input.value = window.meanings[word];
+                    input.classList.add('filled');
+                } else {
+                    input.classList.remove('filled');
+                }
+            });
+        }
+        
+        // Update statistics display
+        function updateStats() {
+            const statsEl = document.getElementById('stats');
+            const inputs = document.querySelectorAll('.vocab-input');
+            
+            if (inputs.length === 0) {
+                statsEl.innerHTML = `<span class="px-3">无加粗词汇</span>`;
+                statsEl.classList.add('hidden');
+                return;
+            }
+            
+            statsEl.classList.remove('hidden');
+            
+            // Collect unique words
+            const wordSet = new Set();
+            inputs.forEach(inp => wordSet.add(inp.dataset.word));
+            
+            const totalUnique = wordSet.size;
+            let filledUnique = 0;
+            
+            wordSet.forEach(w => {
+                const meaning = (window.meanings && window.meanings[w]) ? window.meanings[w].trim() : '';
+                if (meaning !== '') filledUnique++;
+            });
+            
+            statsEl.innerHTML = `
+                <div class="flex items-center gap-x-1.5">
+                    <span class="text-emerald-600"><i class="fa-solid fa-check-double"></i></span>
+                    <span>进度<span class="font-semibold text-emerald-600">${filledUnique}</span> / <span class="font-semibold text-zinc-700">${totalUnique}</span></span>
+                </div>
+            `;
+        }
+        
+        function updateWordCountBadge() {
+            const badge = document.getElementById('word-count-badge');
+            const inputs = document.querySelectorAll('.vocab-input');
+            if (inputs.length === 0) {
+                badge.textContent = '';
+                return;
+            }
+            const unique = new Set();
+            inputs.forEach(i => unique.add(i.dataset.word));
+            badge.innerHTML = `<span class="font-mono">${unique.size}</span> 个独特词汇`;
+        }
+        
+        // Generate storage key (unique per file content)
+        function getStorageKey(filename, content) {
+            const safeName = filename.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            const len = content.length;
+            const prefix = content.substring(0, 80).replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '').substring(0, 24);
+            return `vocab_meanings_${safeName}_${len}_${prefix}`;
+        }
+        
+        // Switch from upload to main view
+        function switchToMain() {
+            document.getElementById('upload-screen').classList.add('hidden');
+            document.getElementById('main-screen').classList.remove('hidden');
+            document.getElementById('main-screen').classList.add('block');
+        }
+        
+        // Handle uploaded file
+        function handleFile(file) {
+            if (!file) return;
+            
+            // Validate extension
+            if (!file.name.toLowerCase().endsWith('.md') && !file.name.toLowerCase().endsWith('.markdown')) {
+                showToast('请选择 .md 或 .markdown 文件', false);
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                window.originalMD = e.target.result;
+                window.currentFileName = file.name;
+                window.storageKey = getStorageKey(file.name, window.originalMD);
+                
+                // Load existing meanings
+                const stored = localStorage.getItem(window.storageKey);
+                window.meanings = stored ? JSON.parse(stored) : {};
+                
+                // Update UI
+                document.getElementById('file-name-display').textContent = file.name;
+                
+                switchToMain();
+                renderContent(window.originalMD);
+                
+                showToast(`已加载 ${file.name}`, true);
+            };
+            reader.onerror = function() {
+                showToast('文件读取失败，请重试', false);
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+        
+        // Load the example article
+        function loadExample() {
+            const EXAMPLE_MD = `# The Dynamic Journey of a Courageous Journalist
+
+In the heart of a **western** **frontier** town on the **continent**, **junior** reporter Alex embarked on his career after he had **graduate**d from university. He was **active** and had excelled in **gymnastics**, which made him **dynamic** and fit. As a **native**, he cherished the **sound** of waves on the **pavement** by the **harbour**.
+
+One **cloudy** day, **above** the market **booth** selling **seaweed**, Alex noticed a **shabby** figure. He decided to **dive** into the mystery **because** his **desire** to uncover the truth was piqued. The man was part of a **plot** to **violate** rules by dumping **poison**, harming the **ecology**. This made Alex's blood **boil** with rising **tension** in the community.
+
+He **grasped** the situation and **wrestled** with his thoughts on how to proceed with **force** and conviction. A **thunderstorm** hit, so he sought **shelter** in a cafe with a **buffet**. There, he overheard a **dialogue** about a **criminal** scheme involving a **burglar** stealing a **parcel** of illegal **material**.
+
+Alex rushed to alert the **personnel** **at** the police station. They were impressed by his courage. He **described** the events using a clever **phrase** in his report, which **raised** public awareness and led to **reform** in **regulation** and **restriction** on pollution.
+
+The evidence was **adequate** and **correct**, helping him **succeed** in bringing **justice**. However, during the chase, he hurt his **knee** and **wrist**. An **ambulance** took him to see the **physician**, who said it was a **pity** but **temporary**, and **rest** would help. Alex chose to **acknowledge** his **fault** and made an **adjustment** to be more careful. The adventure had a **drawback**, but it taught him valuable lessons.
+
+His **religious** fiancée, who sang in the **choir**, was **worried** sick. She urged him to **avoid** unnecessary danger. Alex **proposed**, and as the happy **bridegroom**, he married her in a ceremony attended by **everybody**. **None** could have **foresee**n the next challenge.
+
+News of a **volcano** eruption reached them, causing **endless** chaos, **unemployment**, and people losing **everything**. This was his **second** major international assignment. Alex **volunteer**ed to **cover** the story, going **aboard** a plane. He met an **interpreter** to help communicate. The **wild** terrain was covered in **dirt** and **mineral** ash. It was **likely** the result of poor planning and climate factors. He **learned** how the disaster affected **flesh** and blood families and aspects of **religion** and faith in the face of tragedy.
+
+Alex **consumed** every detail to **deliver** accurate reports that had **power** and **influence**. He **struggled** to **manage** his emotions but knew he had to **do** his duty. It was **vital** to act **before** more lives were lost. He **searched** for solutions and **talked** to survivors. The sight made him **freeze** in horror momentarily, yet he pressed on without **excuse**.
+
+A **fortnight** later, he returned home **nearly** exhausted but **successful**. He **finished** his **thriller** novel, whose **summary** highlighted his journey from a **fool** to a **reliable** professional. The book **explored** **theories** about human nature, **contradictory** feelings like **envy** and **generous** support, and the **fundamental** need for **honour**.
+
+Alex entered a **competition** and won first **place**, allowing him to **earn** respect, **credit**, and **advantage** in his career. He used his **influence** to **vote** for change and supported **voluntary** efforts. He kept notes in his **breast** pocket and used his old **shaver** every morning to stay presentable. He went **straight** to the heart of every story.
+
+One day, stuck in a traffic **jam**, he reflected on a **wrinkle** in a recent case where a witness was **unfit** to testify because he was **drunk**. On the **contrary**, the man later provided key information. Alex **compared** statements and found the truth. He prepared his **defence** of the facts with **outspoken** passion.
+
+He **practise**d his presentation for a **seminar** on environmental issues. The **system** of justice needed improvement, he argued. **At** the **entrance** to the community hall, he felt a **thrill** as the audience applauded his **powerful** speech. **True** to his word, he continued to **make** a difference. It was **late** when he returned, but he felt content.
+
+To unwind, Alex and his wife went to a cabin **overhead** a lake. He helped **wash** **clothing** for charity and **bargain**ed for fresh produce at the local market. He recalled stories from his **ancestor** about how they used to **deal** with hardships. Back in the city, Alex **got** **up** early to sort a **pile** of documents. He looked **up** at the clear sky and felt grateful. Neither rain **nor** storm could stop him now. The **total** impact of his work was immeasurable.
+
+He had an **appointment** with his editor to discuss his next **post** as senior writer. Alex was **able** to **foresee** a bright future. He **registered** for a workshop to further his skills and **amuse**d himself with new ideas. The **special** bond with his family gave him strength. Every **place** they visited held memories. He **held** his child close, knowing life was **endless** in its surprises but full of hope.
+
+As the dog began to **bark** in the yard, Alex smiled. He had overcome many obstacles and would continue to **struggle** for what was right **until** his last breath. His story was one of perseverance, courage, and the **power** of words to change the world for the better. He had **gotten** through every challenge by facing them **straight** on with honesty and integrity. He chose to **acknowledge** the support of his community and worked to **require** better standards in journalism. The **minimum** effort was never enough for him; he always gave his all. This **type** of dedication made him stand out. Alex would often **compare** notes with colleagues and **consume** large amounts of coffee to stay awake during long nights. The job could be **dangerous**, so he learned to **describe** events accurately. He would **finish** his drafts on time and **get** the facts straight. He had to **grasp** complex issues and sort through a **heap** of documents. He would **hold** meetings with sources and **learn** from every experience. **None** of his efforts were wasted. He would **raise** important questions and **register** complaints when needed. He would **search** for hidden truths and bring **shame** to the guilty. He refused to get **sick** with **worry** and would **talk** openly. His guiding **theory** was that **true** reporting mattered. It was **useless** to hide facts, and he would **wrestle** with tough decisions until resolved. There was **none** left undone in his quest for justice.`;
+            
+            window.originalMD = EXAMPLE_MD;
+            window.currentFileName = 'vocabulary_article.md';
+            window.storageKey = getStorageKey(window.currentFileName, EXAMPLE_MD);
+            
+            // Load saved meanings if any
+            const stored = localStorage.getItem(window.storageKey);
+            window.meanings = stored ? JSON.parse(stored) : {};
+            
+            document.getElementById('file-name-display').textContent = 'vocabulary_article.md (示例)';
+            
+            switchToMain();
+            renderContent(EXAMPLE_MD);
+            
+            showToast('已加载示例文章（含 100+ 词汇）', true);
+        }
+        
+        // Export annotated markdown
+        function exportAnnotated() {
+            if (!window.originalMD) {
+                showToast('没有可导出的内容', false);
+                return;
+            }
+            
+            let exported = window.originalMD;
+            const meanings = window.meanings || {};
+            
+            // Replace each **word** with **word**（中文释义）
+            exported = exported.replace(/\*\*([^*]+?)\*\*/g, (match, word) => {
+                const w = word.trim();
+                const meaning = meanings[w] ? meanings[w].trim() : '';
+                if (meaning) {
+                    return `**${w}**（${meaning}）`;
+                } else {
+                    return `**${w}**`;
+                }
+            });
+            
+            // Create and download file
+            const blob = new Blob([exported], { type: 'text/markdown;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            
+            const baseName = (window.currentFileName || 'vocabulary').replace(/\.(md|markdown)$/i, '');
+            a.download = `${baseName}_带中文释义.md`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showToast('已导出带中文释义的 Markdown 文件', true);
+        }
+        
+        // Clear all meanings for current file
+        function clearMeanings() {
+            if (!window.storageKey) return;
+            
+            if (!confirm('确定要清除当前文章的所有中文释义吗？\n此操作仅清除本地缓存中的释义数据。')) {
+                return;
+            }
+            
+            window.meanings = {};
+            localStorage.removeItem(window.storageKey);
+            
+            // Clear all input values
+            document.querySelectorAll('.vocab-input').forEach(input => {
+                input.value = '';
+                input.classList.remove('filled');
+            });
+            
+            updateStats();
+            showToast('已清除所有释义', true);
+        }
+        
+        // Show toast notification
+        function showToast(message, success = true) {
+            const container = document.getElementById('toast-container');
+            
+            const toast = document.createElement('div');
+            toast.className = `toast flex items-center gap-x-3 px-5 py-3 rounded-2xl shadow-lg text-sm font-medium border ${success ? 
+                'bg-emerald-50 border-emerald-200 text-emerald-700' : 
+                'bg-red-50 border-red-200 text-red-700'}`;
+            
+            toast.innerHTML = `
+                <div class="flex items-center gap-x-2.5">
+                    <i class="fa-solid ${success ? 'fa-check-circle text-emerald-500' : 'fa-exclamation-circle text-red-500'} text-lg"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Auto remove after 2.8s
+            setTimeout(() => {
+                toast.style.transition = 'all 0.25s ease';
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(8px)';
+                
+                setTimeout(() => {
+                    if (toast.parentNode) toast.parentNode.removeChild(toast);
+                }, 200);
+            }, 2800);
+        }
+        
+        // Setup drag and drop
+        function setupDropZone() {
+            const dropZone = document.getElementById('drop-zone');
+            const fileInput = document.getElementById('file-input');
+            
+            // Click on drop zone triggers file input
+            dropZone.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            // File input change
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFile(e.target.files[0]);
+                    // Reset input so same file can be re-selected
+                    e.target.value = '';
+                }
+            });
+            
+            // Drag events
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            });
+            
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('dragover');
+            });
+            
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                
+                if (e.dataTransfer.files.length > 0) {
+                    handleFile(e.dataTransfer.files[0]);
+                }
+            });
+            
+            // Keyboard support on dropzone
+            dropZone.setAttribute('tabindex', '0');
+            dropZone.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    fileInput.click();
+                }
+            });
+        }
+        
+        // Initialize everything
+        function initializeApp() {
+            initializeTailwind();
+            setupDropZone();
+            
+            // Example button
+            document.getElementById('example-btn').addEventListener('click', loadExample);
+            
+            // Export button
+            document.getElementById('export-btn').addEventListener('click', exportAnnotated);
+            
+            // Clear button
+            document.getElementById('clear-btn').addEventListener('click', clearMeanings);
+            
+            // Back button
+            document.getElementById('back-btn').addEventListener('click', () => {
+                if (confirm('返回上传界面？当前进度已自动保存至本地缓存。')) {
+                    document.getElementById('main-screen').classList.add('hidden');
+                    document.getElementById('upload-screen').classList.remove('hidden');
+                    // Optional: clear some state
+                    document.getElementById('rendered-content').innerHTML = '';
+                }
+            });
+            
+            // Keyboard shortcuts hint (optional)
+            document.addEventListener('keydown', (e) => {
+                if (e.metaKey && e.key === 'e' && !document.getElementById('main-screen').classList.contains('hidden')) {
+                    e.preventDefault();
+                    exportAnnotated();
+                }
+            });
+            
+            // Welcome toast on first load (only if no previous data)
+            setTimeout(() => {
+                const hasAnyData = Object.keys(localStorage).some(k => k.startsWith('vocab_meanings_'));
+                if (!hasAnyData) {
+                    // showToast('提示：输入框内容会自动保存', true); // optional
+                }
+            }, 4500);
+            
+            // Make sure initial state is correct
+            console.log('%c[VocabLearner] 单页 HTML+CSS+JS 应用已初始化完成', 'color:#64748b');
+        }
+        
+        // Boot app
+        window.onload = initializeApp;
+    </script>
+</body>
+</html>
