@@ -5,92 +5,99 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>动态词汇学习器</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="vocab_learner.css">
 </head>
 
-<body class="bg-zinc-100">
+<body>
     <!-- Upload Screen -->
     <div id="upload-screen" class="upload-screen">
         <div class="upload-shell">
             <div class="upload-header">
-                <div class="inline-flex items-center justify-center w-14 h-14 bg-blue-600 rounded-2xl shadow-inner mb-3">
-                    <i class="fa-solid fa-book text-white text-3xl"></i>
+                <div class="upload-logo">
+                    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path
+                            d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6H6zm7 1.5L18.5 9H13V3.5zM6 4h5v7h7v11H6V4z" />
+                    </svg>
                 </div>
-                <h1 class="text-3xl font-bold tracking-tighter text-zinc-900">动态词汇学习器</h1>
+                <h1 class="upload-title">动态词汇学习器</h1>
             </div>
 
-            <div class="upload-card bg-white rounded-2xl shadow-lg border border-zinc-200">
+            <div class="upload-card">
                 <div class="upload-card-header">
-                    <div class="section-header mb-1">开始使用</div>
-                    <h2 class="text-xl font-semibold tracking-tight">上传文件</h2>
+                    <div class="section-header">开始使用</div>
+                    <h2 class="upload-card-title">上传文件</h2>
                 </div>
 
-                <div id="drop-zone"
-                    class="drop-zone border-2 border-dashed border-zinc-300 hover:border-blue-400 rounded-xl p-7 text-center cursor-pointer bg-zinc-50 hover:bg-white">
-                    <div class="mx-auto w-11 h-11 bg-white rounded-xl flex items-center justify-center border border-zinc-200 mb-3 shadow-sm">
-                        <i class="fa-solid fa-file-upload text-blue-500 text-2xl"></i>
+                <div id="drop-zone" class="drop-zone" role="button" tabindex="0" aria-label="拖放或选择 Markdown 文件">
+                    <div class="drop-zone-icon-wrap">
+                        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path
+                                d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM12 11l-3 3h2v4h2v-4h2l-3-3z" />
+                        </svg>
                     </div>
-                    <p class="font-semibold text-zinc-700">拖放 .md 文件到此处</p>
-                    <p class="text-xs text-zinc-500 mt-1">或点击下方按钮选择文件</p>
+                    <p class="drop-zone-title">拖放 .md 文件到此处</p>
+                    <p class="drop-zone-hint">或点击下方按钮选择文件</p>
                 </div>
 
                 <div class="upload-actions">
-                    <label for="file-input"
-                        class="w-full cursor-pointer inline-flex items-center justify-center gap-x-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition-colors text-white font-semibold rounded-xl text-sm shadow-sm">
-                        <i class="fa-solid fa-folder-open"></i>
+                    <label for="file-input" class="btn btn-primary btn-block">
+                        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path
+                                d="M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8h-6V4h-6zm-2 2h2v4h6V6h2v14H4V6zm8 10H8v-2h8v2z" />
+                        </svg>
                         <span>选择文件</span>
                     </label>
-                    <input type="file" id="file-input" class="hidden" accept=".md,.markdown,text/markdown">
+                    <input type="file" id="file-input" class="file-input-hidden" accept=".md,.markdown,text/markdown">
                 </div>
 
-                <div class="upload-footer text-[10px] text-center text-zinc-400">
-                    支持标准 Markdown 语法 • 本地缓存自动保存
-                </div>
+                <div class="upload-footer">支持标准 Markdown 语法 • 本地缓存自动保存</div>
             </div>
 
-            <p class="text-center text-xs text-zinc-400 mt-4">所有数据仅保存在您的本地缓存中</p>
+            <p class="upload-note">所有数据仅保存在您的本地缓存中</p>
         </div>
     </div>
 
     <!-- Main Screen -->
-    <div id="main-screen" class="hidden min-h-screen bg-zinc-100">
+    <div id="main-screen" class="hidden">
         <div class="page-header">
             <div class="page-header-inner">
                 <div class="page-header-bar">
                     <div class="page-brand">
-                        <div class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-inner shrink-0">
-                            <i class="fa-solid fa-book text-white text-lg"></i>
+                        <div class="brand-icon">
+                            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <path
+                                    d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6H6zm7 1.5L18.5 9H13V3.5zM6 4h5v7h7v11H6V4z" />
+                            </svg>
                         </div>
                         <div>
-                            <div class="font-bold text-lg tracking-tight text-zinc-900 leading-tight">动态词汇学习器</div>
-                            <div id="file-name-display" class="text-xs text-zinc-500 font-mono tracking-tight"></div>
+                            <div class="brand-title">动态词汇学习器</div>
+                            <div id="file-name-display" class="file-name-display"></div>
                         </div>
                     </div>
 
                     <div class="page-toolbar">
-                        <div id="stats"
-                            class="hidden md:flex items-center px-4 h-8 text-sm font-medium bg-zinc-100 border border-zinc-200 rounded-full text-zinc-600">
-                        </div>
+                        <div id="stats" class="stats-badge hidden"></div>
 
-                        <button id="export-btn"
-                            class="inline-flex items-center gap-x-1.5 px-4 h-8 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 transition-colors text-white text-sm font-semibold rounded-full shadow-sm">
-                            <i class="fa-solid fa-download"></i>
-                            <span class="hidden sm:inline">导出文件</span>
-                            <span class="sm:hidden">导出</span>
+                        <button id="export-btn" type="button" class="btn btn-success">
+                            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 3l4 4h-3v8h-2V7H8l4-4zm-8 14h16v2H4v-2z" />
+                            </svg>
+                            <span class="btn-label-full">导出文件</span>
+                            <span class="btn-label-short">导出</span>
                         </button>
 
-                        <button id="clear-btn"
-                            class="inline-flex items-center gap-x-1.5 px-3.5 h-8 text-sm font-medium border border-zinc-300 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors rounded-full text-zinc-600">
-                            <i class="fa-solid fa-trash-can"></i>
-                            <span class="hidden sm:inline">清除释义</span>
+                        <button id="clear-btn" type="button" class="btn btn-outline btn-outline-danger">
+                            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6h2v9h-2V9zm4 0h2v9h-2V9zM7 9h2v9H7V9z" />
+                            </svg>
+                            <span class="btn-label-full">清除释义</span>
                         </button>
 
-                        <button id="back-btn"
-                            class="inline-flex items-center gap-x-1.5 px-3.5 h-8 text-sm font-medium border border-zinc-300 hover:bg-zinc-50 transition-colors rounded-full text-zinc-600">
-                            <i class="fa-solid fa-arrow-left"></i>
-                            <span class="hidden sm:inline">返回上传</span>
+                        <button id="back-btn" type="button" class="btn btn-outline">
+                            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M10.5 5.5L4 12l6.5 6.5 1.4-1.4L7.8 13H20v-2H7.8l4.1-4.1-1.4-1.4z" />
+                            </svg>
+                            <span class="btn-label-full">返回上传</span>
                         </button>
                     </div>
                 </div>
@@ -100,26 +107,56 @@
         <div class="content-area">
             <div class="info-bar">
                 <div class="info-bar-meta">
-                    <span class="px-2.5 py-0.5 text-xs font-semibold bg-blue-100 text-blue-700 rounded-full">词汇学习模式</span>
-                    <span id="word-count-badge" class="text-xs text-zinc-500"></span>
+                    <span class="mode-badge">词汇检查模式</span>
+                    <span id="word-count-badge" class="word-count-badge"></span>
                 </div>
-                <div class="text-xs text-zinc-500 flex items-center gap-x-1">
-                    <i class="fa-solid fa-info-circle"></i>
+                <div class="info-bar-note">
+                    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+                    </svg>
                     <span>输入框内容实时保存</span>
                 </div>
             </div>
 
-            <div class="story-container bg-white rounded-2xl">
-                <div id="rendered-content" class="rendered-content prose-custom"></div>
+            <div class="story-container">
+                <div id="rendered-content" class="rendered-content"></div>
             </div>
 
             <div class="content-hint">
-                <p class="text-xs text-zinc-400">提示：点击输入框输入对应词汇的中文释义 • 相同词汇的释义会自动同步</p>
+                <p>提示：点击输入框输入对应词汇的中文释义 • 相同词汇的释义会自动同步</p>
             </div>
         </div>
     </div>
 
-    <div id="toast-container" class="fixed bottom-4 right-4 z-[100] flex flex-col gap-y-2"></div>
+    <div id="toast-container" class="toast-container"></div>
+
+    <div id="export-modal" class="verify-modal hidden" role="dialog" aria-modal="true" aria-labelledby="export-title">
+        <div class="verify-modal-backdrop" data-export-dismiss></div>
+        <div class="verify-modal-panel">
+            <h2 id="export-title" class="verify-title">导出文件</h2>
+            <p id="export-message" class="verify-message"></p>
+            <div class="export-progress">
+                <div id="export-progress-bar" class="export-progress-bar"></div>
+            </div>
+            <p id="export-progress-text" class="export-progress-text"></p>
+            <div class="verify-actions">
+                <button type="button" class="btn btn-outline" data-export-dismiss>取消</button>
+                <button type="button" id="export-confirm-btn" class="btn btn-success">继续导出</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="verify-modal" class="verify-modal hidden" role="dialog" aria-modal="true" aria-labelledby="verify-title">
+        <div class="verify-modal-backdrop" data-verify-dismiss></div>
+        <div class="verify-modal-panel">
+            <h2 id="verify-title" class="verify-title"></h2>
+            <p id="verify-message" class="verify-message"></p>
+            <div class="verify-actions">
+                <button type="button" class="btn btn-outline" data-verify-dismiss>取消</button>
+                <button type="button" id="verify-confirm-btn" class="btn btn-danger">确认</button>
+            </div>
+        </div>
+    </div>
 
     <script src="vocab_learner.js"></script>
 </body>
