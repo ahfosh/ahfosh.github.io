@@ -1,5 +1,58 @@
+const SESSION_KEY = 'vocab_learner_session';
+
 function initializeTailwind() {
     document.documentElement.style.setProperty('--accent', '#2563eb');
+}
+
+function saveSession() {
+    if (!window.originalMD || !window.currentFileName) return;
+    localStorage.setItem(SESSION_KEY, JSON.stringify({
+        fileName: window.currentFileName,
+        content: window.originalMD,
+        storageKey: window.storageKey
+    }));
+}
+
+function clearSession() {
+    localStorage.removeItem(SESSION_KEY);
+}
+
+function loadDocument(fileName, content, showLoadedToast = true) {
+    window.originalMD = content;
+    window.currentFileName = fileName;
+    window.storageKey = getStorageKey(fileName, content);
+
+    const stored = localStorage.getItem(window.storageKey);
+    window.meanings = stored ? JSON.parse(stored) : {};
+
+    document.getElementById('file-name-display').textContent = fileName;
+    switchToMain();
+    renderContent(window.originalMD);
+    saveSession();
+
+    if (showLoadedToast) {
+        showToast(`已加载 ${fileName}`, true);
+    }
+}
+
+function restoreSession() {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return false;
+
+    try {
+        const session = JSON.parse(raw);
+        if (!session.fileName || !session.content) {
+            clearSession();
+            return false;
+        }
+
+        window.storageKey = session.storageKey || getStorageKey(session.fileName, session.content);
+        loadDocument(session.fileName, session.content, false);
+        return true;
+    } catch {
+        clearSession();
+        return false;
+    }
 }
 
 function escapeHtml(unsafe) {
@@ -200,19 +253,7 @@ function handleFile(file) {
 
     const reader = new FileReader();
     reader.onload = function(e) {
-        window.originalMD = e.target.result;
-        window.currentFileName = file.name;
-        window.storageKey = getStorageKey(file.name, window.originalMD);
-
-        const stored = localStorage.getItem(window.storageKey);
-        window.meanings = stored ? JSON.parse(stored) : {};
-
-        document.getElementById('file-name-display').textContent = file.name;
-
-        switchToMain();
-        renderContent(window.originalMD);
-
-        showToast(`已加载 ${file.name}`, true);
+        loadDocument(file.name, e.target.result);
     };
     reader.onerror = function() {
         showToast('文件读取失败，请重试', false);
@@ -352,6 +393,11 @@ function initializeApp() {
 
     document.getElementById('back-btn').addEventListener('click', () => {
         if (confirm('返回上传界面？当前进度已自动保存至本地缓存。')) {
+            clearSession();
+            window.originalMD = null;
+            window.currentFileName = null;
+            window.storageKey = null;
+            window.meanings = {};
             document.getElementById('main-screen').classList.add('hidden');
             document.getElementById('upload-screen').classList.remove('hidden');
             document.getElementById('rendered-content').innerHTML = '';
@@ -364,6 +410,8 @@ function initializeApp() {
             exportAnnotated();
         }
     });
+
+    restoreSession();
 
     console.log('%c[VocabLearner] 应用已初始化完成', 'color:#64748b');
 }
