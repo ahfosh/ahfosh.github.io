@@ -16,9 +16,6 @@ body {
     background: #f4f4f5;
     color: #18181b;
     -webkit-font-smoothing: antialiased;
-}
-
-body.exam-mode {
     -webkit-user-select: none;
     user-select: none;
     -webkit-touch-callout: none;
@@ -245,121 +242,6 @@ body.exam-mode {
     border-color: #fecaca;
 }
 
-.btn-exam-mode[aria-pressed="true"] {
-    color: #b45309;
-    background: #fffbeb;
-    border-color: #fcd34d;
-}
-
-.btn-exam-mode[aria-pressed="true"]:hover {
-    background: #fef3c7;
-    border-color: #fbbf24;
-}
-
-.btn-exam-mode:not([aria-pressed="true"]) {
-    color: #b45309;
-    border-color: #fcd34d;
-}
-
-.btn-exam-mode:not([aria-pressed="true"]):hover {
-    background: #fffbeb;
-}
-
-.exam-timer-badge {
-    display: none;
-    min-height: 2rem;
-    padding: 0.5rem 0.625rem;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    color: #b45309;
-    background: #fffbeb;
-    border: 1px solid #fcd34d;
-    border-radius: 9999px;
-}
-
-.exam-timer-badge:not(.hidden) {
-    display: inline-flex;
-    align-items: center;
-}
-
-.exam-timer-badge.urgent {
-    color: #dc2626;
-    background: #fef2f2;
-    border-color: #fecaca;
-}
-
-.exam-timer-badge.locked {
-    color: #7f1d1d;
-    background: #fee2e2;
-    border-color: #fca5a5;
-}
-
-.exam-timer-toggle {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.9375rem;
-    font-weight: 500;
-    color: #3f3f46;
-    cursor: pointer;
-}
-
-.exam-timer-toggle input {
-    width: 1rem;
-    height: 1rem;
-    accent-color: #d97706;
-}
-
-.exam-timer-fields {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.exam-timer-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.exam-timer-input {
-    width: 4.5rem;
-    min-height: 2.5rem;
-    padding: 0.5rem 0.625rem;
-    font-family: inherit;
-    font-size: 0.9375rem;
-    text-align: center;
-    color: #18181b;
-    background: #fafafa;
-    border: 1px solid #d4d4d8;
-    border-radius: 0.5rem;
-}
-
-.exam-timer-input:focus {
-    outline: none;
-    border-color: #f59e0b;
-    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15);
-    background: #fff;
-}
-
-.exam-timer-unit {
-    font-size: 0.875rem;
-    color: #71717a;
-}
-
-body.exam-locked .vocab-input {
-    pointer-events: none;
-    opacity: 0.72;
-    background: #f4f4f5;
-    border-color: #d4d4d8;
-    color: #71717a;
-}
-
-body.exam-locked .vocab-input:focus {
-    box-shadow: none;
-}
-
 .btn-label-short {
     display: inline;
 }
@@ -520,11 +402,6 @@ body.exam-locked .vocab-input:focus {
     color: #1d4ed8;
     background: #dbeafe;
     border-radius: 9999px;
-}
-
-.mode-badge.exam-active {
-    color: #b45309;
-    background: #fef3c7;
 }
 
 .word-count-badge {
@@ -747,34 +624,6 @@ body.exam-locked .vocab-input:focus {
     display: flex;
     justify-content: flex-end;
     gap: 0.5rem;
-}
-
-.exam-password-input {
-    width: 100%;
-    min-height: 2.5rem;
-    padding: 0.625rem 0.875rem;
-    font-family: inherit;
-    font-size: 0.9375rem;
-    color: #18181b;
-    background: #fafafa;
-    border: 1px solid #d4d4d8;
-    border-radius: 0.5rem;
-    transition:
-        border-color 0.15s ease,
-        box-shadow 0.15s ease;
-}
-
-.exam-password-input:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
-    background: #fff;
-}
-
-.exam-password-error {
-    margin: -0.5rem 0 0;
-    font-size: 0.8125rem;
-    color: #dc2626;
 }
 
 .export-progress {
