@@ -13,6 +13,146 @@ let examTimerEnd = null;
 let examTimerInterval = null;
 let examPasswordResolver = null;
 let examSetupResolver = null;
+const shieldReasons = new Set();
+const SHIELD_MESSAGES = {
+    fullscreen: '考试模式需要全屏显示，请点击下方按钮恢复全屏',
+    hidden: '检测到切屏，请立即返回考试页面',
+    blur: '窗口失去焦点，考试内容已隐藏',
+    screenshot: '考试模式禁止截图',
+};
+
+function isFullscreen() {
+    return Boolean(
+        document.fullscreenElement
+        || document.webkitFullscreenElement
+        || document.msFullscreenElement,
+    );
+}
+
+async function enterExamFullscreen() {
+    const el = document.documentElement;
+
+    try {
+        if (el.requestFullscreen) {
+            await el.requestFullscreen();
+        } else if (el.webkitRequestFullscreen) {
+            await el.webkitRequestFullscreen();
+        } else if (el.msRequestFullscreen) {
+            await el.msRequestFullscreen();
+        } else {
+            return false;
+        }
+        return isFullscreen();
+    } catch {
+        return false;
+    }
+}
+
+function exitExamFullscreen() {
+    if (!isFullscreen()) return;
+
+    const doc = document;
+    if (doc.exitFullscreen) {
+        doc.exitFullscreen();
+    } else if (doc.webkitExitFullscreen) {
+        doc.webkitExitFullscreen();
+    } else if (doc.msExitFullscreen) {
+        doc.msExitFullscreen();
+    }
+}
+
+function isExamModalOpen() {
+    return !document.getElementById('exam-password-modal')?.classList.contains('hidden')
+        || !document.getElementById('exam-setup-modal')?.classList.contains('hidden');
+}
+
+function addShieldReason(reason) {
+    if (!shieldReasons.has(reason)) {
+        shieldReasons.add(reason);
+        updateExamShieldUI();
+    }
+}
+
+function removeShieldReason(reason) {
+    if (shieldReasons.delete(reason)) {
+        updateExamShieldUI();
+    }
+}
+
+function getShieldMessage() {
+    if (shieldReasons.has('fullscreen')) return SHIELD_MESSAGES.fullscreen;
+    if (shieldReasons.has('hidden')) return SHIELD_MESSAGES.hidden;
+    if (shieldReasons.has('blur')) return SHIELD_MESSAGES.blur;
+    if (shieldReasons.has('screenshot')) return SHIELD_MESSAGES.screenshot;
+    return SHIELD_MESSAGES.fullscreen;
+}
+
+function updateExamShieldUI() {
+    const shield = document.getElementById('exam-shield');
+    const messageEl = document.getElementById('exam-shield-message');
+    if (!shield || !messageEl) return;
+
+    const shouldShow = isExamModeActive() && shieldReasons.size > 0;
+    shield.classList.toggle('hidden', !shouldShow);
+    shield.setAttribute('aria-hidden', String(!shouldShow));
+
+    if (shouldShow) {
+        messageEl.textContent = getShieldMessage();
+    }
+}
+
+function syncExamEnvironmentState() {
+    if (!isExamModeActive()) {
+        shieldReasons.clear();
+        updateExamShieldUI();
+        return;
+    }
+
+    if (!isFullscreen()) {
+        addShieldReason('fullscreen');
+    } else {
+        removeShieldReason('fullscreen');
+    }
+
+    if (document.hidden) {
+        addShieldReason('hidden');
+    } else {
+        removeShieldReason('hidden');
+    }
+
+    if (!document.hasFocus() && !isExamModalOpen()) {
+        addShieldReason('blur');
+    } else {
+        removeShieldReason('blur');
+    }
+}
+
+async function restoreExamEnvironment({ userInitiated = false } = {}) {
+    if (!isExamModeActive()) return false;
+
+    if (!isFullscreen()) {
+        const ok = await enterExamFullscreen();
+        if (!ok) {
+            addShieldReason('fullscreen');
+            if (userInitiated) {
+                showToast('无法进入全屏，请检查浏览器权限', false);
+            }
+            return false;
+        }
+        removeShieldReason('fullscreen');
+    }
+
+    if (document.pictureInPictureElement) {
+        try {
+            await document.exitPictureInPicture();
+        } catch {
+            /* ignore */
+        }
+    }
+
+    syncExamEnvironmentState();
+    return shieldReasons.size === 0;
+}
 
 function closeExamPasswordModal(result) {
     const modal = document.getElementById('exam-password-modal');
@@ -27,6 +167,8 @@ function closeExamPasswordModal(result) {
         examPasswordResolver(result);
         examPasswordResolver = null;
     }
+
+    syncExamEnvironmentState();
 }
 
 function closeExamSetupModal(result) {
@@ -279,9 +421,9 @@ export function updateExamModeUI() {
         if (examLocked && examMode) {
             btn.title = '考试已锁定，关闭需输入密码';
         } else if (examMode) {
-            btn.title = '考试模式已开启，关闭需输入密码';
+            btn.title = '考试模式已开启：全屏、禁止复制/翻译/切屏/截图/悬浮窗';
         } else {
-            btn.title = '开启后禁止复制和翻译文章内容';
+            btn.title = '开启后强制全屏，并禁止复制、翻译、切屏、截图和悬浮窗';
         }
     }
 
@@ -289,6 +431,7 @@ export function updateExamModeUI() {
     applyExamLockUI();
     updateTranslationProtection();
     updateExamTimerUI();
+    syncExamEnvironmentState();
 
     if (badge) {
         if (!examMode) {
@@ -316,9 +459,13 @@ function setExamMode(enabled, { silent = false, setup = null, preserveTimer = fa
         } else if (!preserveTimer) {
             clearExamTimerState();
         }
+        syncExamEnvironmentState();
     } else {
         clearExamTimerState();
         unlockExam();
+        shieldReasons.clear();
+        updateExamShieldUI();
+        exitExamFullscreen();
     }
 
     updateExamModeUI();
@@ -326,7 +473,7 @@ function setExamMode(enabled, { silent = false, setup = null, preserveTimer = fa
     if (!silent) {
         if (enabled) {
             const timerNote = setup?.timed ? '，计时已开始' : '，不限时间';
-            showToast(`已开启考试模式，禁止复制和翻译${timerNote}`, true);
+            showToast(`已开启考试模式，全屏并禁止复制、翻译、切屏、截图和悬浮窗${timerNote}`, true);
         } else {
             showToast('已关闭考试模式', true);
         }
@@ -338,7 +485,14 @@ export async function toggleExamMode() {
         const setup = await requestExamSetup();
         if (!setup) return;
 
+        const fullscreenOk = await enterExamFullscreen();
+        if (!fullscreenOk) {
+            showToast('考试模式需要全屏权限，请允许后重试', false);
+            return;
+        }
+
         setExamMode(true, { setup });
+        await restoreExamEnvironment();
         return;
     }
 
@@ -367,9 +521,134 @@ export function restoreExamState() {
         applyExamLockUI();
         updateExamTimerUI();
     }
+
+    if (enabled && isExamModeActive() && !isFullscreen()) {
+        addShieldReason('fullscreen');
+    }
+}
+
+function isScreenshotShortcut(e) {
+    if (e.key === 'PrintScreen' || e.code === 'PrintScreen') return true;
+
+    const key = e.key.toLowerCase();
+    if (key === 's' && e.shiftKey && (e.metaKey || e.getModifierState?.('Meta'))) {
+        return true;
+    }
+
+    if (key === 's' && e.ctrlKey && e.shiftKey) {
+        return true;
+    }
+
+    return false;
+}
+
+function flashScreenshotShield() {
+    addShieldReason('screenshot');
+    showToast(SHIELD_MESSAGES.screenshot, false);
+
+    if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText('').catch(() => {});
+    }
+
+    setTimeout(() => {
+        removeShieldReason('screenshot');
+        syncExamEnvironmentState();
+    }, 1200);
+}
+
+function patchFloatingWindowApis() {
+    if (HTMLVideoElement.prototype.requestPictureInPicture) {
+        const originalRequestPiP = HTMLVideoElement.prototype.requestPictureInPicture;
+        HTMLVideoElement.prototype.requestPictureInPicture = function requestPictureInPicturePatched(...args) {
+            if (isExamModeActive()) {
+                showToast('考试模式禁止使用悬浮窗', false);
+                return Promise.reject(new DOMException('Exam mode blocks picture-in-picture', 'NotAllowedError'));
+            }
+            return originalRequestPiP.apply(this, args);
+        };
+    }
+
+    if (window.documentPictureInPicture?.requestWindow) {
+        const originalRequestWindow = window.documentPictureInPicture.requestWindow.bind(
+            window.documentPictureInPicture,
+        );
+        window.documentPictureInPicture.requestWindow = function requestWindowPatched(...args) {
+            if (isExamModeActive()) {
+                showToast('考试模式禁止使用悬浮窗', false);
+                return Promise.reject(new DOMException('Exam mode blocks document picture-in-picture', 'NotAllowedError'));
+            }
+            return originalRequestWindow(...args);
+        };
+    }
+
+    const originalOpen = window.open;
+    window.open = function openPatched(...args) {
+        if (isExamModeActive()) {
+            showToast('考试模式禁止打开新窗口', false);
+            return null;
+        }
+        return originalOpen.apply(window, args);
+    };
 }
 
 export function setupExamModeProtection() {
+    patchFloatingWindowApis();
+
+    document.getElementById('exam-shield-restore-btn')?.addEventListener('click', () => {
+        restoreExamEnvironment({ userInitiated: true });
+    });
+
+    const onFullscreenChange = () => {
+        if (!isExamModeActive()) return;
+
+        if (!isFullscreen()) {
+            addShieldReason('fullscreen');
+            showToast('考试模式需要保持全屏', false);
+        } else {
+            removeShieldReason('fullscreen');
+        }
+        syncExamEnvironmentState();
+    };
+
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+
+    document.addEventListener('visibilitychange', () => {
+        if (!isExamModeActive()) return;
+
+        if (document.hidden) {
+            addShieldReason('hidden');
+            showToast('检测到切屏，考试内容已隐藏', false);
+        } else {
+            removeShieldReason('hidden');
+            restoreExamEnvironment();
+        }
+        syncExamEnvironmentState();
+    });
+
+    window.addEventListener('blur', () => {
+        if (!isExamModeActive() || isExamModalOpen()) return;
+
+        window.setTimeout(() => {
+            if (!isExamModeActive() || isExamModalOpen()) return;
+            if (!document.hasFocus()) {
+                addShieldReason('blur');
+            }
+        }, 80);
+    });
+
+    window.addEventListener('focus', () => {
+        if (!isExamModeActive()) return;
+        removeShieldReason('blur');
+        syncExamEnvironmentState();
+    });
+
+    document.addEventListener('enterpictureinpicture', () => {
+        if (!isExamModeActive()) return;
+        document.exitPictureInPicture?.().catch(() => {});
+        showToast('考试模式禁止使用悬浮窗', false);
+    });
+
     document.addEventListener('copy', (e) => {
         if (isExamModeActive()) e.preventDefault();
     });
@@ -392,16 +671,38 @@ export function setupExamModeProtection() {
         }
     });
 
-    document.addEventListener('keydown', (e) => {
-        if (!isExamModeActive() || !(e.ctrlKey || e.metaKey)) return;
-
-        const key = e.key.toLowerCase();
-        if (key === 'c') {
+    document.addEventListener('dragstart', (e) => {
+        if (isExamModeActive() && !isEditableTarget(e.target)) {
             e.preventDefault();
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (!isExamModeActive()) return;
+
+        if (isScreenshotShortcut(e)) {
+            e.preventDefault();
+            e.stopPropagation();
+            flashScreenshotShield();
             return;
         }
 
-        if (key === 'x' && !isEditableTarget(e.target)) {
+        if (e.ctrlKey || e.metaKey) {
+            const key = e.key.toLowerCase();
+            if (key === 'c') {
+                e.preventDefault();
+                return;
+            }
+            if (key === 'x' && !isEditableTarget(e.target)) {
+                e.preventDefault();
+                return;
+            }
+            if (key === 'a' && !isEditableTarget(e.target)) {
+                e.preventDefault();
+            }
+        }
+
+        if (e.key === 'F11') {
             e.preventDefault();
         }
     });
