@@ -167,21 +167,6 @@ body {
     color: #a1a1aa;
 }
 
-.upload-note {
-    margin: 0;
-    font-size: 0.75rem;
-    text-align: center;
-    color: #a1a1aa;
-}
-
-.section-header {
-    margin: 0;
-    font-size: 0.8125rem;
-    letter-spacing: -0.5px;
-    font-weight: 600;
-    color: #64748b;
-}
-
 /* Buttons */
 .btn {
     display: inline-flex;
@@ -439,16 +424,6 @@ body {
     border: 1px solid #e5e7eb;
     border-radius: 1rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-.content-hint {
-    text-align: center;
-}
-
-.content-hint p {
-    margin: 0;
-    font-size: 0.75rem;
-    color: #a1a1aa;
 }
 
 /* Article */

@@ -341,8 +341,12 @@ function showToast(message, success = true) {
     }, 2800);
 }
 
-function returnToUpload() {
-    if (!confirm('返回上传界面后，当前进度已自动保存至本地缓存。确定要离开当前文章吗？')) return;
+async function returnToUpload() {
+    const verified = await requestConfirmation({
+        title: '返回上传',
+        message: '当前进度已自动保存至本地缓存。确定要离开当前文章吗？'
+    });
+    if (!verified) return;
 
     clearSession();
     window.originalMD = null;
