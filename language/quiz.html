@@ -675,38 +675,30 @@
           return marker;
         });
 
-        if (markedAvailable) {
+        if (markedAvailable && purifierAvailable) {
           const rendered = window.marked.parse(preparedMarkdown, {
             breaks: true,
             gfm: true,
           });
 
-          previewBodyEl.innerHTML = purifierAvailable
-            ? window.DOMPurify.sanitize(rendered, { ADD_ATTR: ["data-index"] })
-            : rendered;
+          // Never inject unsanitized Markdown HTML
+          previewBodyEl.innerHTML = window.DOMPurify.sanitize(rendered, {
+            ADD_ATTR: ["data-index"],
+          });
 
-          renderModeEl.textContent = purifierAvailable
-            ? "Markdown 渲染模式"
-            : "Markdown 渲染模式（未清洗 HTML）";
+          renderModeEl.textContent = "Markdown 渲染模式";
+
+          previewBodyEl.querySelectorAll(".textarea-slot").forEach((slot) => {
+            const index = Number(slot.dataset.index);
+            slot.replaceWith(createAnswerField(index));
+          });
         } else {
-          previewBodyEl.innerHTML = "";
-          const fallback = document.createElement("pre");
-          fallback.textContent = state.markdown;
-          previewBodyEl.appendChild(fallback);
-
-          renderModeEl.textContent = "纯文本回退模式";
-        }
-
-        const slots = previewBodyEl.querySelectorAll(".textarea-slot");
-
-        slots.forEach(slot => {
-          const index = Number(slot.dataset.index);
-          slot.replaceWith(createAnswerField(index));
-        });
-
-        if (!slots.length && state.placeholderCount > 0 && !markedAvailable) {
-          previewBodyEl.innerHTML = "";
+          // Safe fallback: text only + answer fields (no raw HTML)
           renderPlainFallback();
+          renderModeEl.textContent =
+            markedAvailable && !purifierAvailable
+              ? "纯文本回退模式（DOMPurify 未加载）"
+              : "纯文本回退模式";
         }
       }
 

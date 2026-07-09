@@ -1,5 +1,4 @@
 document.addEventListener("DOMContentLoaded", function () {
-  // 加载 JSON 数据
   fetch("schedule.json")
     .then((response) => response.json())
     .then((data) => {
@@ -8,20 +7,27 @@ document.addEventListener("DOMContentLoaded", function () {
     .catch((error) => console.error("Error fetching schedule data:", error));
 });
 
-// 渲染赛程表
+function appendTextTd(row, text, rowspan) {
+  const td = document.createElement("td");
+  if (rowspan && rowspan > 0) td.rowSpan = rowspan;
+  td.textContent = text == null ? "" : String(text);
+  row.appendChild(td);
+  return td;
+}
+
 function renderSchedule(weeks) {
   const tbody = document.querySelector("#scheduleTable tbody");
+  tbody.replaceChildren();
+
   let lastWeek = "";
   let lastDate = "";
   let lastDay = "";
-  let weekSpan = 0;
-  let dateSpan = 0;
-  let daySpan = 0;
 
-  weeks.forEach((week, weekIndex) => {
-    week.days.forEach((day, dayIndex) => {
+  weeks.forEach((week) => {
+    week.days.forEach((day) => {
       const row = document.createElement("tr");
 
+      let weekSpan = 0;
       if (week.week === lastWeek) {
         weekSpan = 0;
       } else {
@@ -29,6 +35,7 @@ function renderSchedule(weeks) {
         lastWeek = week.week;
       }
 
+      let dateSpan = 0;
       if (day.date === lastDate) {
         dateSpan = 0;
       } else {
@@ -36,6 +43,7 @@ function renderSchedule(weeks) {
         lastDate = day.date;
       }
 
+      let daySpan = 0;
       if (day.day === lastDay) {
         daySpan = 0;
       } else {
@@ -43,27 +51,35 @@ function renderSchedule(weeks) {
         lastDay = day.day;
       }
 
-      row.innerHTML = `
-       ${weekSpan > 0 ? `<td rowspan="${weekSpan}">${week.week}</td>` : ""}
-        <td ${dateSpan > 0 ? `rowspan="${dateSpan}"` : ""}>${day.date}</td>
-        <td ${daySpan > 0 ? `rowspan="${daySpan}"` : ""}>${day.day}</td>
-        <td>${day.events.quiz || ""}</td>
-        <td>${day.events.logic || ""}</td>
-        <td>${day.events.analysis || ""}</td>
-        <td>${day.events.vision || ""}</td>
-        <td>${day.events.memory || ""}</td>
-        <td>${day.events.duel || ""}</td>
-        <td>${day.events.chat || ""}</td>
-        <td>${day.events.gold || ""}</td>
-      `;
+      if (weekSpan > 0) {
+        appendTextTd(row, week.week, weekSpan);
+      }
+      appendTextTd(row, day.date, dateSpan > 0 ? dateSpan : undefined);
+      appendTextTd(row, day.day, daySpan > 0 ? daySpan : undefined);
+
+      const events = day.events || {};
+      [
+        "quiz",
+        "logic",
+        "analysis",
+        "vision",
+        "memory",
+        "duel",
+        "chat",
+        "gold",
+      ].forEach((key) => {
+        appendTextTd(row, events[key] || "");
+      });
+
       tbody.appendChild(row);
     });
   });
 
-  // 处理最后一行合并
   const finalRow = document.createElement("tr");
-  finalRow.innerHTML = `
-    <td colspan="12" style="text-align:center;">闭幕式 & 颁奖典礼</td>
-  `;
+  const finalTd = document.createElement("td");
+  finalTd.colSpan = 12;
+  finalTd.style.textAlign = "center";
+  finalTd.textContent = "闭幕式 & 颁奖典礼";
+  finalRow.appendChild(finalTd);
   tbody.appendChild(finalRow);
 }

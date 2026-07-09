@@ -37,6 +37,7 @@ const SKIP_DIRS = new Set([
   "node_modules",
   "scripts",
   ".netlify",
+  "terminals",
 ]);
 
 const SKIP_FILES = new Set([
@@ -53,6 +54,10 @@ const SKIP_FILES = new Set([
   "README.md",
   "LICENSE",
   "LICENSE.md",
+  "DEPLOY.md",
+  ".env",
+  ".env.local",
+  ".env.example",
 ]);
 
 function parseArgs(argv) {

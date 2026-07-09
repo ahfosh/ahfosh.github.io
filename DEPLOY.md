@@ -135,6 +135,33 @@ Deploy: https://app.netlify.com/projects/ahfosh/deploys/<deployId>
 
 > 本机调试可用用户环境变量或未跟踪的 `.env`（已在 `.gitignore`）；**不要** `git add .env`。
 
+### Token 轮换（建议）
+
+若 PAT 曾出现在日志/聊天/截图中，在 Netlify 撤销旧 token 并新建：
+
+1. [Personal access tokens](https://app.netlify.com/user/applications#personal-access-tokens) → 删除旧 token → New access token  
+2. GitHub → Settings → Secrets → Actions → 更新 `NETLIFY_AUTH_TOKEN`  
+3. 本机（PowerShell）：
+
+```powershell
+[System.Environment]::SetEnvironmentVariable("NETLIFY_AUTH_TOKEN", "<新token>", "User")
+$env:NETLIFY_AUTH_TOKEN = "<新token>"
+# 可选：重写本地 .env（勿提交）
+```
+
+另：`GITLAB_TOKEN` 同样只放 Secret；GitHub→GitLab 同步使用 HTTP Header 鉴权，**不把 token 写进 remote URL**。
+
+---
+
+## 6. 安全基线（public 库）
+
+| 项 | 做法 |
+|----|------|
+| 密钥 | 仅 GitHub/GitLab Secrets 或本机 env；永不进 Git |
+| 部署排除 | `.netlifyignore` + `scripts/netlify-deploy.mjs` SKIP（含 `terminals/`、`.env`） |
+| 响应头 | 根目录 `_headers`（CSP / nosniff / frame / referrer） |
+| 前端 | 第三方与用户数据用 `textContent` / DOM API，避免 `innerHTML` 拼接 |
+
 ---
 
 ## 相关路径
@@ -142,8 +169,10 @@ Deploy: https://app.netlify.com/projects/ahfosh/deploys/<deployId>
 | 路径 | 职责 |
 |------|------|
 | 仓库根目录 | 前端静态资源（发布目录） |
-| `.netlifyignore` | 部署时排除的文件 |
+| `_headers` | Netlify 安全响应头 |
+| `.netlifyignore` | CLI 部署时排除的文件 |
 | `scripts/deploy-netlify.mjs` | 本机 CLI：上传草稿 + 发布生产 |
 | `scripts/netlify-deploy.mjs` | API file-digest 部署（CI 与可选本机用） |
 | `.github/workflows/netlify-deploy.yml` | push `main` 时自动 API 部署 |
+| `.github/workflows/sync-to-gitlab.yml` | 镜像到 GitLab（Header 鉴权） |
 | `.netlify/state.json` | CLI 关联的站点 ID |

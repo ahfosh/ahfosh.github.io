@@ -6,9 +6,10 @@ export function showToast(message, success = true) {
     toast.innerHTML = `
         <div class="toast-body">
             ${success ? ICON_CHECK_CIRCLE : ICON_ERROR_CIRCLE}
-            <span>${message}</span>
+            <span></span>
         </div>
     `;
+    toast.querySelector('span').textContent = message == null ? '' : String(message);
 
     document.getElementById('toast-container').appendChild(toast);
 

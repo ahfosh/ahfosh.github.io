@@ -1,17 +1,24 @@
 let addedTexts = [];
 
 function generateSVG() {
-  const rows = parseInt(document.getElementById("rows").value);
-  const columns = parseInt(document.getElementById("columns").value);
-  let svgContent = "";
+  const rows = parseInt(document.getElementById("rows").value, 10) || 0;
+  const columns = parseInt(document.getElementById("columns").value, 10) || 0;
+  const svg = document.getElementById("svg");
+  svg.replaceChildren();
+  const NS = "http://www.w3.org/2000/svg";
   for (let i = 0; i < rows; i++) {
     for (let j = 0; j < columns; j++) {
-      svgContent += `<rect x="${j * 50}" y="${
-        i * 50
-      }" width="50" height="50" fill="white" stroke="black" stroke-width="1"/>`;
+      const rect = document.createElementNS(NS, "rect");
+      rect.setAttribute("x", String(j * 50));
+      rect.setAttribute("y", String(i * 50));
+      rect.setAttribute("width", "50");
+      rect.setAttribute("height", "50");
+      rect.setAttribute("fill", "white");
+      rect.setAttribute("stroke", "black");
+      rect.setAttribute("stroke-width", "1");
+      svg.appendChild(rect);
     }
   }
-  document.getElementById("svg").innerHTML = svgContent;
   addedTexts = [];
 }
 

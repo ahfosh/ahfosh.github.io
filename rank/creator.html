@@ -105,91 +105,94 @@
     </div>
 
     <script>
-      let currentIndex = 0; // 记录当前加载的数据索引
+      let currentIndex = 0;
 
-      // Function to make HTTP request and fetch data
       async function fetchData(period) {
         try {
           const response = await fetch(
-            `https://xiaoce.fun/api/v0/xiaoce/user/getTopCreators?period=${period}`
+            `https://xiaoce.fun/api/v0/xiaoce/user/getTopCreators?period=${encodeURIComponent(period)}`,
           );
           const data = await response.json();
-          populateTable(data.data, 0); // 从头开始加载数据
+          populateTable(data.data, 0);
         } catch (error) {
           console.error("Error fetching data:", error);
         }
       }
 
-      // Function to make HTTP request and fetch user stats
       async function fetchUserStats(userId) {
         try {
           const response = await fetch(
-            `https://xiaoce.fun/api/v0/scratch/user/stats?userId=${userId}`
+            `https://xiaoce.fun/api/v0/scratch/user/stats?userId=${encodeURIComponent(userId)}`,
           );
           const data = await response.json();
-          return data.data; // 返回整个数据对象，包括 createScratchTaken 和 createScratchTotal
+          return data.data;
         } catch (error) {
           console.error("Error fetching user stats:", error);
-          return { createScratchTaken: 0, createScratchTotal: 0 }; // 返回默认值
+          return { createScratchTaken: 0, createScratchTotal: 0 };
         }
       }
 
-      // Function to populate table with data
       async function populateTable(topCreators, startIndex) {
         const tableBody = document.getElementById("userRankTable");
+        if (!topCreators) return;
 
-        if (topCreators) {
-          // 如果是从头开始加载，清空现有行
-          if (startIndex === 0) {
-            tableBody.innerHTML = "";
-          }
-
-          for (
-            let i = startIndex;
-            i < topCreators.length && i < startIndex + 10;
-            i++
-          ) {
-            // 限制加载十个数组
-            const entry = topCreators[i];
-            const { user } = entry;
-            const { userId, userName, icon } = user;
-
-            // 获取用户统计信息
-            const userData = await fetchUserStats(userId);
-            const createScratchTaken = userData.createScratchTaken;
-            const createScratchTotal = userData.createScratchTotal;
-
-            const row = `
-                        <tr>
-                            <td>${i + 1}</td>
-                            <td>${userId}</td>
-                            <td><img src="https://i.chao-fan.com/${icon}" alt="Avatar"></td>
-                            <td><a href="https://xiaoce.fun/u/${userId}" target="_blank">${userName}</a></td>
-                            <td>${createScratchTaken}</td>
-                            <td>${createScratchTotal}</td>
-                        </tr>
-                    `;
-            tableBody.innerHTML += row;
-          }
-
-          // 更新当前加载的索引
-          currentIndex = startIndex + 10;
+        if (startIndex === 0) {
+          tableBody.replaceChildren();
         }
+
+        for (
+          let i = startIndex;
+          i < topCreators.length && i < startIndex + 10;
+          i++
+        ) {
+          const entry = topCreators[i];
+          const user = entry.user || {};
+          const userId = user.userId ?? "";
+          const userName = user.userName ?? "";
+          const icon = user.icon ? String(user.icon).replace(/^\/+/, "") : "";
+
+          const userData = await fetchUserStats(userId);
+
+          const row = document.createElement("tr");
+          const cells = Array.from({ length: 6 }, () =>
+            row.appendChild(document.createElement("td")),
+          );
+
+          cells[0].textContent = String(i + 1);
+          cells[1].textContent = String(userId);
+
+          const avatar = document.createElement("img");
+          avatar.src = `https://i.chao-fan.com/${encodeURI(icon)}`;
+          avatar.alt = "Avatar";
+          avatar.referrerPolicy = "no-referrer";
+          cells[2].appendChild(avatar);
+
+          const link = document.createElement("a");
+          link.href = `https://xiaoce.fun/u/${encodeURIComponent(userId)}`;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.textContent = userName;
+          cells[3].appendChild(link);
+
+          cells[4].textContent = String(userData.createScratchTaken ?? 0);
+          cells[5].textContent = String(userData.createScratchTotal ?? 0);
+
+          tableBody.appendChild(row);
+        }
+
+        currentIndex = startIndex + 10;
       }
 
-      // 加载更多按钮点击事件处理函数
       document
         .getElementById("loadMoreBtn")
         .addEventListener("click", async function () {
-          // 继续加载下一个数据集
           const response = await fetch(
-            `https://xiaoce.fun/api/v0/xiaoce/user/getTopCreators?period=all&start=${currentIndex}`
+            `https://xiaoce.fun/api/v0/xiaoce/user/getTopCreators?period=all&start=${encodeURIComponent(currentIndex)}`,
           );
           const data = await response.json();
           populateTable(data.data, currentIndex);
         });
 
-      // 初始加载
       fetchData("all");
     </script>
   </body>

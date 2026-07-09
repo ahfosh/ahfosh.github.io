@@ -4,27 +4,28 @@ create-pages:
     - mkdir -p public
     - cp -r 404.html index.html styles.css tools_recommendation.html public/ 2>/dev/null || true
     - cp -r chaofun language olympic rank test tuxun xiaoce public/ 2>/dev/null || true
+    - cp -f _headers public/_headers 2>/dev/null || true
   pages: true
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
+# Scheduled mirror from GitHub. Token only via HTTP header (not remote URL).
 mirror-from-github:
   stage: deploy
   before_script:
     - apt-get update -y && apt-get install -y git
   script:
+    - set -euo pipefail
+    - test -n "${GITLAB_TOKEN:-}" || (echo "GITLAB_TOKEN missing" && exit 1)
     - git config --global user.email "ci@example.com"
     - git config --global user.name "GitLab CI"
-
-    # 克隆 GitHub 仓库
     - git clone https://github.com/ahfosh/ahfosh.github.io.git repo
     - cd repo
-
-    # 添加 GitLab 远程（用 Token）
-    - git remote add gitlab https://oauth2:${GITLAB_TOKEN}@gitlab.com/ahfosh/ahfosh.gitlab.io.git
-
-    # 强制镜像推送
-    - git push --mirror gitlab
-
+    - git remote add gitlab "https://gitlab.com/ahfosh/ahfosh.gitlab.io.git"
+    - AUTH_B64="$(printf 'oauth2:%s' "$GITLAB_TOKEN" | base64 -w0)"
+    - git config --local "http.https://gitlab.com/.extraheader" "Authorization: Basic ${AUTH_B64}"
+    - git push -f gitlab HEAD:main
+    - git push -f gitlab --tags || true
+    - git config --local --unset-all "http.https://gitlab.com/.extraheader" || true
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule"

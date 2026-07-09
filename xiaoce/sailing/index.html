@@ -243,8 +243,10 @@
           if (this.readyState == 4 && this.status == 200) {
             var csvData = this.responseText;
             var csvArray = csvData.split("\n");
-            var output = "";
+            var out = document.getElementById("output");
+            out.replaceChildren();
             var found = false;
+            var matched = false;
             for (var i = 0; i < csvArray.length; i++) {
               var row = csvArray[i].split(",");
               if (found && row[0].trim().toLowerCase() !== searchTerm) {
@@ -254,13 +256,15 @@
                 found = true;
               }
               if (found) {
-                output += "<p>" + row.slice(1).join(", ") + "</p>"; // Exclude the first column
+                matched = true;
+                var p = document.createElement("p");
+                p.textContent = row.slice(1).join(", ");
+                out.appendChild(p);
               }
             }
-            if (output === "") {
-              output = "No matching data found";
+            if (!matched) {
+              out.textContent = "No matching data found";
             }
-            document.getElementById("output").innerHTML = output;
           }
         };
         xhttp.open("GET", "modules.csv", true);

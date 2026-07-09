@@ -90,7 +90,26 @@ function newXMLString(element) {
 
 function displayPreview(svgData) {
   const previewSVG = document.getElementById("previewSVG");
-  previewSVG.innerHTML = svgData;
+  previewSVG.replaceChildren();
+  const doc = new DOMParser().parseFromString(svgData, "image/svg+xml");
+  const root = doc.documentElement;
+  if (!root || root.nodeName.toLowerCase() === "parsererror") {
+    previewSVG.textContent = "Invalid SVG";
+    return;
+  }
+  root.querySelectorAll("script, foreignObject").forEach((el) => el.remove());
+  root.querySelectorAll("*").forEach((el) => {
+    [...el.attributes].forEach((attr) => {
+      if (/^on/i.test(attr.name)) el.removeAttribute(attr.name);
+      if (
+        (attr.name === "href" || attr.name === "xlink:href") &&
+        /^\s*javascript:/i.test(attr.value)
+      ) {
+        el.removeAttribute(attr.name);
+      }
+    });
+  });
+  previewSVG.appendChild(document.importNode(root, true));
 }
 
 function createDownloadLink(svgData) {

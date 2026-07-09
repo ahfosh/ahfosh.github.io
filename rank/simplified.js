@@ -1,34 +1,57 @@
 function fetchRankings(rankType) {
-  fetch(`https://tuxun.fun/api/v0/tuxun/getRank?type=${rankType}`)
+  fetch(`https://tuxun.fun/api/v0/tuxun/getRank?type=${encodeURIComponent(rankType)}`)
     .then((response) => response.json())
     .then((data) => {
       if (data.success) {
         const rankings = data.data;
         const table = document.getElementById("rankingsTable");
-        table.innerHTML =
-          "<caption>Top 200</caption><tr><th>排名</th><th>头像</th><th>用户名</th><th>省份</th><th>积分</th></tr>"; // Clear the table
+        table.replaceChildren();
+
+        const caption = document.createElement("caption");
+        caption.textContent = "Top 200";
+        table.appendChild(caption);
+
+        const header = table.insertRow(-1);
+        ["排名", "头像", "用户名", "省份", "积分"].forEach((label) => {
+          const th = document.createElement("th");
+          th.textContent = label;
+          header.appendChild(th);
+        });
 
         rankings.forEach((user, index) => {
           const row = table.insertRow(-1);
-          const cells = [
-            row.insertCell(0), // rankCell
-            row.insertCell(1), // avatarCell
-            row.insertCell(2), // userNameCell
-            row.insertCell(3), // provinceCell
-            row.insertCell(4), // ratingCell
-          ];
+          const rankCell = row.insertCell(0);
+          const avatarCell = row.insertCell(1);
+          const userNameCell = row.insertCell(2);
+          const provinceCell = row.insertCell(3);
+          const ratingCell = row.insertCell(4);
 
-          cells[0].textContent = index + 1; // Generate rank based on index
+          rankCell.textContent = String(index + 1);
+
           const avatar = document.createElement("img");
-          const avatarUrl = `https://i.chao-fan.com/${user.userAO.icon}?x-oss-process=image/resize,h_120/quality,q_75`;
-          avatar.src = avatarUrl;
-          cells[1].appendChild(avatar);
-          cells[2].innerHTML = `<a href="https://tuxun.fun/user/${user.userAO.userId}" target="_blank" class="profile-link">${user.userAO.userName}</a>`;
-          cells[3].textContent = user.userAO.province;
-          cells[4].textContent = user.rating;
+          const icon = user.userAO?.icon ? String(user.userAO.icon).replace(/^\/+/, "") : "";
+          avatar.src = `https://i.chao-fan.com/${encodeURI(icon)}?x-oss-process=image/resize,h_120/quality,q_75`;
+          avatar.alt = "";
+          avatar.referrerPolicy = "no-referrer";
+          avatarCell.appendChild(avatar);
+
+          const profileLink = document.createElement("a");
+          const userId = user.userAO?.userId ?? "";
+          profileLink.href = `https://tuxun.fun/user/${encodeURIComponent(userId)}`;
+          profileLink.target = "_blank";
+          profileLink.rel = "noopener noreferrer";
+          profileLink.className = "profile-link";
+          profileLink.textContent = user.userAO?.userName ?? "";
+          userNameCell.appendChild(profileLink);
+
+          provinceCell.textContent = user.userAO?.province ?? "";
+          ratingCell.textContent =
+            user.rating === undefined || user.rating === null
+              ? ""
+              : String(user.rating);
 
           if (index < 3) {
-            row.classList.add(["gold", "silver", "bronze"][index]); // Add medal class based on index
+            row.classList.add(["gold", "silver", "bronze"][index]);
           }
         });
       } else {
@@ -40,5 +63,4 @@ function fetchRankings(rankType) {
     });
 }
 
-// Fetch the default rankings on page load
 fetchRankings("world");
