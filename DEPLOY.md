@@ -113,11 +113,32 @@ Deploy: https://app.netlify.com/projects/ahfosh/deploys/<deployId>
 
 ---
 
+## 5. GitHub Actions 自动部署（可选）
+
+推送到 `main` 会跑 `.github/workflows/netlify-deploy.yml`：用 Netlify Deploy API（file digest，只上传变更文件），**不**走 Git 构建队列。
+
+### 必填仓库 Secret
+
+在 GitHub：**Settings → Secrets and variables → Actions → New repository secret**
+
+| Secret | 说明 |
+|--------|------|
+| `NETLIFY_AUTH_TOKEN` | **必填**。Netlify Personal Access Token（[User settings → Applications → Personal access tokens](https://app.netlify.com/user/applications#personal-access-tokens)） |
+| `NETLIFY_SITE_ID` | 可选。默认 workflow 已写入 `436960d0-e806-404d-86db-9a07a1a682ed`；若要覆盖再设此 secret |
+
+未设置 `NETLIFY_AUTH_TOKEN` 时 workflow 会立刻失败并提示补 secret，不会误报成脚本参数问题。
+
+手动触发：Actions → **Deploy to Netlify (API)** → Run workflow（可勾 Draft、填 message）。
+
+---
+
 ## 相关路径
 
 | 路径 | 职责 |
 |------|------|
 | 仓库根目录 | 前端静态资源（发布目录） |
 | `.netlifyignore` | 部署时排除的文件 |
-| `scripts/deploy-netlify.mjs` | 上传草稿 + 发布生产 |
+| `scripts/deploy-netlify.mjs` | 本机 CLI：上传草稿 + 发布生产 |
+| `scripts/netlify-deploy.mjs` | API file-digest 部署（CI 与可选本机用） |
+| `.github/workflows/netlify-deploy.yml` | push `main` 时自动 API 部署 |
 | `.netlify/state.json` | CLI 关联的站点 ID |

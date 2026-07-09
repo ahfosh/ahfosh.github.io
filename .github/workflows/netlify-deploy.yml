@@ -31,10 +31,24 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Check Netlify secrets
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        run: |
+          if [ -z "$NETLIFY_AUTH_TOKEN" ]; then
+            echo "::error::Missing repository secret NETLIFY_AUTH_TOKEN."
+            echo "Create a Netlify Personal Access Token (User settings → Applications → Personal access tokens),"
+            echo "then add it at: Settings → Secrets and variables → Actions → New repository secret"
+            echo "Name: NETLIFY_AUTH_TOKEN"
+            echo "Optional: also set NETLIFY_SITE_ID (defaults to the ahfosh site id in this workflow)."
+            exit 1
+          fi
+
       - name: Deploy via file digest API
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          # Secret optional; falls back to the known ahfosh site id
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID || '436960d0-e806-404d-86db-9a07a1a682ed' }}
         run: |
           ARGS=()
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.draft }}" = "true" ]; then
