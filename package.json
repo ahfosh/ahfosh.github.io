@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "scripts": {
+    "deploy:netlify": "node scripts/deploy-netlify.mjs"
+  }
+}
