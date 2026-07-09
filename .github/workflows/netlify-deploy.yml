@@ -1,4 +1,6 @@
 # Direct Netlify Deploy API — no git-connected build, only changed files uploaded.
+# Public repo safe: token lives only in GitHub Actions secrets (never in git).
+# Fork PRs do not receive secrets; job also pinned to this repository.
 name: Deploy to Netlify (API)
 
 on:
@@ -19,8 +21,13 @@ concurrency:
   group: netlify-deploy
   cancel-in-progress: true
 
+# Least privilege for a public static site
+permissions:
+  contents: read
+
 jobs:
   deploy:
+    if: github.repository == 'ahfosh/ahfosh.github.io'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -36,19 +43,16 @@ jobs:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
         run: |
           if [ -z "$NETLIFY_AUTH_TOKEN" ]; then
-            echo "::error::Missing repository secret NETLIFY_AUTH_TOKEN."
-            echo "Create a Netlify Personal Access Token (User settings → Applications → Personal access tokens),"
-            echo "then add it at: Settings → Secrets and variables → Actions → New repository secret"
-            echo "Name: NETLIFY_AUTH_TOKEN"
-            echo "Optional: also set NETLIFY_SITE_ID (defaults to the ahfosh site id in this workflow)."
+            echo "::error::Missing repository secret NETLIFY_AUTH_TOKEN (Actions → Secrets). Token is never committed to this public repo."
             exit 1
           fi
 
       - name: Deploy via file digest API
         env:
+          # Secret — only available to workflows on this repo (not forks)
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          # Secret optional; falls back to the known ahfosh site id
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID || '436960d0-e806-404d-86db-9a07a1a682ed' }}
+          # Site id is not sensitive; hardcode so public forks need not set it
+          NETLIFY_SITE_ID: 436960d0-e806-404d-86db-9a07a1a682ed
         run: |
           ARGS=()
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.draft }}" = "true" ]; then

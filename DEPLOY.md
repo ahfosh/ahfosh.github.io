@@ -117,18 +117,23 @@ Deploy: https://app.netlify.com/projects/ahfosh/deploys/<deployId>
 
 推送到 `main` 会跑 `.github/workflows/netlify-deploy.yml`：用 Netlify Deploy API（file digest，只上传变更文件），**不**走 Git 构建队列。
 
-### 必填仓库 Secret
+### 必填仓库 Secret（公开仓库也安全）
+
+本仓库是 **public**，凭证**绝不**写进 Git / `.env` 提交。只放在 GitHub **encrypted secrets** 里；fork 的 PR **拿不到** secrets。
 
 在 GitHub：**Settings → Secrets and variables → Actions → New repository secret**
 
 | Secret | 说明 |
 |--------|------|
-| `NETLIFY_AUTH_TOKEN` | **必填**。Netlify Personal Access Token（[User settings → Applications → Personal access tokens](https://app.netlify.com/user/applications#personal-access-tokens)） |
-| `NETLIFY_SITE_ID` | 可选。默认 workflow 已写入 `436960d0-e806-404d-86db-9a07a1a682ed`；若要覆盖再设此 secret |
+| `NETLIFY_AUTH_TOKEN` | **唯一必填**。Netlify Personal Access Token（[创建](https://app.netlify.com/user/applications#personal-access-tokens)） |
 
-未设置 `NETLIFY_AUTH_TOKEN` 时 workflow 会立刻失败并提示补 secret，不会误报成脚本参数问题。
+站点 ID `436960d0-e806-404d-86db-9a07a1a682ed` 写在 workflow 里即可（非敏感，与生产 URL 对应）。
+
+未设置 `NETLIFY_AUTH_TOKEN` 时 workflow 会立刻失败并提示补 secret。
 
 手动触发：Actions → **Deploy to Netlify (API)** → Run workflow（可勾 Draft、填 message）。
+
+> 本机调试可用用户环境变量或未跟踪的 `.env`（已在 `.gitignore`）；**不要** `git add .env`。
 
 ---
 
