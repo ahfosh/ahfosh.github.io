@@ -3,16 +3,31 @@ import { requestConfirmation } from './modal.js';
 import { clearSession, saveSession } from './session.js';
 import { state } from './state.js';
 import { showToast } from './toast.js';
-import { getStorageKey } from './utils.js';
+import { extractAndStripAnnotations, getStorageKey } from './utils.js';
 import { clearAllInputs, renderContent, updateProgressUI } from './vocab.js';
 
 export function loadDocument(fileName, content, showLoadedToast = true) {
-    state.originalMD = content;
+    // Extract **word**（answer） annotations, strip them from display/export source
+    const { cleanContent, meanings: fileMeanings } = extractAndStripAnnotations(content);
+
+    state.originalMD = cleanContent;
     state.currentFileName = fileName;
-    state.storageKey = getStorageKey(fileName, content);
+    state.storageKey = getStorageKey(fileName, cleanContent);
 
     const stored = localStorage.getItem(state.storageKey);
     state.meanings = stored ? JSON.parse(stored) : {};
+
+    // Auto-fill answers from （） in the file when local cache has no value yet
+    let mergedFromFile = false;
+    for (const [word, meaning] of Object.entries(fileMeanings)) {
+        if (!state.meanings[word]?.trim() && meaning) {
+            state.meanings[word] = meaning;
+            mergedFromFile = true;
+        }
+    }
+    if (mergedFromFile && state.storageKey) {
+        localStorage.setItem(state.storageKey, JSON.stringify(state.meanings));
+    }
 
     document.getElementById('file-name-display').textContent = fileName;
     document.getElementById('upload-screen').classList.add('hidden');
@@ -21,7 +36,11 @@ export function loadDocument(fileName, content, showLoadedToast = true) {
     saveSession();
 
     if (showLoadedToast) {
-        showToast(`已加载 ${fileName}`, true);
+        const annotatedCount = Object.keys(fileMeanings).length;
+        const msg = annotatedCount > 0
+            ? `已加载 ${fileName}，自动填入 ${annotatedCount} 个释义`
+            : `已加载 ${fileName}`;
+        showToast(msg, true);
     }
 }
 

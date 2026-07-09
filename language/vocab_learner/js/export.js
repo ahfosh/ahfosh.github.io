@@ -19,7 +19,8 @@ export async function exportAnnotated() {
     if (!confirmed) return;
 
     const meanings = state.meanings;
-    const exported = state.originalMD.replace(/\*\*([^*]+?)\*\*/g, (_, word) => {
+    // Match bold words and any trailing full-width annotation so re-export never doubles （）
+    const exported = state.originalMD.replace(/\*\*([^*]+?)\*\*(?:（[^）]*）)?/g, (_, word) => {
         const w = word.trim();
         const meaning = meanings[w]?.trim();
         return meaning ? `**${w}**（${meaning}）` : `**${w}**`;
